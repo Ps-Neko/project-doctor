@@ -70,6 +70,32 @@ def test_extra_ids_reported_but_not_counted(tmp_path: Path) -> None:
     assert "Z-99" in result.stdout
 
 
+def test_revisit_lines_parsed_and_printed(tmp_path: Path) -> None:
+    expected = tmp_path / "EXPECTED.md"
+    expected.write_text(_expected_md(["A-01"]), encoding="utf-8")
+    report = tmp_path / "report.md"
+    report.write_text(
+        "# 보고서\n\n## 다음 진료 안내\n비교: 해결 1 / 그대로 12 / 신규 2 / 악화 0\n"
+        "숙제: HARD-01\n\n발견ID: A-01\n",
+        encoding="utf-8",
+    )
+    result = _run(report, expected)
+    assert result.returncode == 0
+    assert "해결 1 / 그대로 12" in result.stdout
+    assert "HARD-01" in result.stdout
+
+
+def test_no_revisit_lines_is_silent(tmp_path: Path) -> None:
+    expected = tmp_path / "EXPECTED.md"
+    expected.write_text(_expected_md(["A-01"]), encoding="utf-8")
+    report = tmp_path / "report.md"
+    report.write_text(_report_md("발견ID: A-01"), encoding="utf-8")
+    result = _run(report, expected)
+    assert result.returncode == 0
+    assert "재방문 비교" not in result.stdout
+    assert "숙제" not in result.stdout
+
+
 def test_utf8_korean_path_and_content(tmp_path: Path) -> None:
     folder = tmp_path / "한글 경로 테스트"
     folder.mkdir()

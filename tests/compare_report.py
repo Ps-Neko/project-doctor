@@ -24,6 +24,16 @@ def parse_report_ids(lines: list[str]) -> list[str]:
     return [part.strip() for part in body.split(",") if part.strip()]
 
 
+def parse_revisit_lines(lines: list[str]) -> dict[str, str]:
+    """v2 재방문 기계 판독 줄('비교:', '숙제:')을 추출한다 (없으면 빈 dict)."""
+    extras: dict[str, str] = {}
+    for prefix, key in (("비교:", "comparison"), ("숙제:", "homework")):
+        found = [ln.strip() for ln in lines if ln.strip().startswith(prefix)]
+        if found:
+            extras[key] = found[-1].split(":", 1)[1].strip()
+    return extras
+
+
 def parse_expected_ids(lines: list[str]) -> list[str]:
     """'## 심은 문제' 표의 ID 열을 추출한다(중복 제거, 순서 유지)."""
     ids: list[str] = []
@@ -72,6 +82,11 @@ def main(argv: list[str]) -> int:
     print(f"탐지율: {rate:.1f}% ({n_found}/{len(expected_ids)})")
     print(f"놓친 ID: {', '.join(missed) if missed else EMPTY_MARK}")
     print(f"정답지에 없는 보고 ID(참고용): {', '.join(extra) if extra else EMPTY_MARK}")
+    revisit = parse_revisit_lines(read_lines(argv[1]))
+    if "comparison" in revisit:
+        print(f"재방문 비교(참고용): {revisit['comparison']}")
+    if "homework" in revisit:
+        print(f"숙제(참고용): {revisit['homework']}")
     print(f"판정: {'통과' if passed else '미달'} (기준 {PASS_THRESHOLD:.0f}%)")
     return 0 if passed else 1
 
