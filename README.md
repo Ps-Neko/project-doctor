@@ -5,7 +5,7 @@
 
 📄 **[3분 데모 — 실제 진단 보고서 보기](./DEMO.md)** · 📊 **[측정 기록 (EVALS)](./EVALS.md)**
 
-> **현재 버전: v1.1.0** — 전 모드 동작. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
+> **현재 버전: v2.0.0 "단골 주치의"** — 전 모드 + 단골 기능: 등급 추이("5월 D → 오늘 C") · 치료 부위 경과 확인 · 이번 주 처방 1건 · 검진 주기 안내. 두 번째 방문부터 "지난번보다 좋아졌는지"를 아는 주치의가 됩니다. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
 
 ## 무엇을 해주나요
 
