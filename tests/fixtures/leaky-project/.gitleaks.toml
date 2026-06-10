@@ -1,0 +1,17 @@
+# leaky-project 픽스처 전용 gitleaks 설정.
+#
+# 이 폴더(tests/fixtures/leaky-project) 전체는 project-doctor 스킬의
+# "공개 전 검진" 자체 테스트용으로 일부러 가짜 비밀키·가짜 개인정보를
+# 심어 둔 의도된 표본이다.
+#
+# - AWS 키는 AWS 공식 문서의 공개 예시 키 (실존 자격증명 아님)
+# - GitHub 토큰은 내용에 EXAMPLE 이 들어간 명백한 가짜
+# - .env.backup 의 비밀번호, notes.md 의 이메일·전화번호도 전부 실존하지 않는 더미값
+
+title = "leaky-project fixture allowlist"
+
+[allowlist]
+description = "Intentional fake secrets planted for skill self-test fixtures - no real credentials exist in this folder"
+paths = [
+    '''.*''',
+]

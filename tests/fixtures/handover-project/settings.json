@@ -1,0 +1,5 @@
+{
+  "default_threshold": 10,
+  "csv_path": "data/stock.csv",
+  "csv_encoding": "utf-8"
+}
