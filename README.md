@@ -5,7 +5,7 @@
 
 📄 **[3분 데모 — 실제 진단 보고서 보기](./DEMO.md)** · 📊 **[측정 기록 (EVALS)](./EVALS.md)**
 
-> **현재 버전: v1.1.0** — 전 모드 동작. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
+> **현재 버전: v1.2.0** — 전 모드 동작 + 결과지 개편. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
 
 ## 무엇을 해주나요
 
