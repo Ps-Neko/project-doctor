@@ -1,0 +1,7 @@
+{
+  "webhook_url": "https://hooks.example.com/orders/summary",
+  "currency": "KRW",
+  "discount_threshold": 50000,
+  "free_shipping_threshold": 30000,
+  "report_title": "고객별 주문 합계"
+}

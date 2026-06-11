@@ -1,0 +1,46 @@
+/* dark.css — 블로그 다크 테마 (밤에 읽기 편한 배경) */
+
+body {
+  font-family: "Noto Sans KR", sans-serif;
+  background: #1b1d22;
+  color: #d8dadf;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.blog-header {
+  border-bottom: 2px solid #7aa2ff;
+  margin-bottom: 1.5rem;
+}
+
+.blog-header nav a {
+  color: #7aa2ff;
+  text-decoration: none;
+  margin-right: 0.5rem;
+}
+
+.sidebar {
+  float: right;
+  width: 180px;
+  font-size: 0.85rem;
+  background: #262a33;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.post-body h1 {
+  color: #9db8ff;
+}
+
+.post-nav {
+  margin-top: 2rem;
+  border-top: 1px dashed #444;
+  padding-top: 0.5rem;
+}
+
+.comments {
+  color: #777;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}

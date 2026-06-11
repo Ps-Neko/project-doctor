@@ -1,0 +1,28 @@
+"""주문 관리 도구 — 옛 메인 (백업 사본)."""
+
+import csv
+
+
+def main():
+    orders = []
+    with open("orders.csv", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            orders.append(row)
+    grand_total = 0
+    for order in orders:
+        names = order.get("item_names", "").split("|")
+        prices = order.get("item_prices", "").split("|")
+        qtys = order.get("item_qtys", "").split("|")
+        line_total = 0
+        for name, price, qty in zip(names, prices, qtys):
+            if not name:
+                continue
+            line_total += int(price) * int(qty)
+        print(order.get("customer", "?"), line_total)
+        grand_total += line_total
+    print("합계:", grand_total)
+
+
+if __name__ == "__main__":
+    main()
