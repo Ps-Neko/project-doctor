@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: pytest 설치 (테스트 코드는 표준 라이브러리만 쓰지만 러너는 필요)
+        run: python -m pip install --upgrade pip pytest
+
       - name: 채점기·형식 검증기 단위 테스트 (pytest)
         run: python -m pytest tests/ -v
 
