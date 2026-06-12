@@ -49,8 +49,8 @@ GPT가 공개판만 보고 제안한 22건 중 16건은 이미 구현(다수 초
 
 > 1·2순위(버전 정합·README 100% 문구)는 즉시 교정 완료(루트 README v2.4.0→v2.5.0, "내부 표본 기준" 앞붙임 — 직전 v2.5.0 작업 누락분). 아래는 게시 후 트랙. 사용자 결정(2026-06-12): "바로 게시" — 게시 전엔 미적용.
 
-- **[BL-20] 버전 단일 출처** — 리뷰어 1순위 근본 처방. SKILL·README(루트+skills)·CHANGELOG·report-template 상태 문구에 버전이 수동 분산 → 오늘 루트 README 누락 같은 드리프트 재발. `skills/project-doctor/VERSION` 단일 파일 + CI에서 불일치를 실패로 잡는 검증 스크립트. report-template 상태 문구(현 v2.1.0=양식 확정 연혁)도 이때 정리.
-- **[BL-21] CI Windows 축 추가** — 리뷰어 2순위. 현재 `ubuntu-latest` 단일인데 주 사용자는 Windows(PowerShell 설치 예시·UTF-8/BOM·`C:\` 경로·한글 경로). 특히 `check_write_boundary.py` 절대경로 판정이 OS 경로 문법 의존이라 `windows-latest`에서 pytest+링크 검사 가치 큼. (게시 전 권장이었으나 사용자 "바로 게시"로 게시 후 트랙)
+- **[BL-20] 버전 단일 출처** — **→ 완료 (2026-06-12)**. `tests/check_version.py`: SKILL.md를 단일 진실로 보고 루트 README·스킬 README·CHANGELOG 최신이 모두 일치하는지 검사, 불일치 시 CI 실패. VERSION 파일 신설 대신 기존 "SKILL.md가 단일출처" 계약 유지(더 단순). CI에 step 추가 — 오늘 루트 README 드리프트가 이 검사였으면 즉시 잡혔을 것. 공개판·dev 둘 다 v1.5.0/v2.5.0 정합 확인. **잔여**: report-template 상태 문구(v2.1.0=양식 확정 연혁)는 버전 검사 대상서 제외(별개 의미) — 추후 필요 시 정리.
+- **[BL-21] CI Windows 축 추가** — **→ 완료 (2026-06-12)**. ci.yml을 matrix `[ubuntu-latest, windows-latest]`로 재구성, **양축 CI 통과 실증**(run 27402435017: windows·ubuntu 모두 success). `check_write_boundary.py` 절대경로 판정이 Windows에서도 정상 동작 확인. 부수 작업: 채점 회귀를 bash heredoc → `tests/check_scoring_regression.py`(OS 무관)로 분리해야 Windows 러너에서 동작.
 - **[BL-22] 위치 정확도 샘플링 게이트** — 리뷰어 3순위(BL-17 보류의 절충). 완전 자동 채점 대신 fixture 일부에 `핵심 ID → file:line` 기대값을 두고 "상위 5개 ID 위치만 정규식 검사". 보고서 자유 서술 안 깨고 최소 위치 오진 방어. BL-17 전면 보류 대비 가벼운 중간안.
 - **[BL-23] 재방문 fallback 강화** — 리뷰어 5순위. 기록부 손상·구버전 필드 부재 시 조용한 생략 규칙은 있으나(record-format), 기록 파싱이 애매할 때 "기본 checkup 보고서로 자동 강등"하는 명시적 fallback을 더 강하게.
 
