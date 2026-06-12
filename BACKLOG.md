@@ -69,6 +69,24 @@ GPT가 공개판만 보고 제안한 22건 중 16건은 이미 구현(다수 초
 **→ 미반영 (Optional/Nit, 비긴급 — BL-25로 묶음):**
 - **[BL-25] 코드 위생 정리** — ① 공유 유틸 `_common.py`로 중복 제거(stdout reconfigure 7곳·read_lines·ID 정규식 3곳) ② 종료코드 분리(사용법 오류 2 vs 게이트 미달 1) ③ 출력 이모지 잔존(`✓` in check_links) 텍스트화 — 사용자 이모지 금지 규칙 정합 ④ check_links 이미지(`![]()`)·코드펜스 내 링크 처리 ⑤ docstring BL 번호 1:1 교정. 전부 동작 무관 위생 작업.
 
+## J. 4차 전체 코드 리뷰 (2026-06-12, verify·compare 채점기 집중)
+
+> code-review "전체 코드". 직전 미검토였던 verify_report_format.py(가장 복잡한 파서) + compare_report.py 전체 + 테스트 품질을 3관점 적대 리뷰 → 검증자 실측 재현. 검증된 결함 전부 수정 → **공개판 v1.5.2 / dev v2.5.2**.
+
+**→ 수정 완료 (v1.5.2/v2.5.2):**
+- [Critical] verify check_grade: 코드펜스 안 예시 등급줄이 펜스 밖 실제 위반을 가림 → 펜스 제외 + 전수 검사
+- verify SECRET_PATTERNS: GitHub 가변길이·gho/ghs/github_pat·Google AIza·줄바꿈 PEM 추가(거짓음성 축소)
+- verify check_four_fields: 전역 substring → 발견 항목별 검사(거짓양·음성 제거), 발견ID:(없음)↔본문 발견 모순 검출(machine_ok일 때만)
+- verify read_text errors=replace(cp949), detect_major_version 표지 한정
+- verify/compare 발견ID 블록: verify는 여러 개면 FORM-05, compare는 펜스 예시 제외(불일치 해소)
+- compare parse_expected_ids: 전각파이프·백틱·공백헤더·2표 리셋·GUID 정확매칭·절 진입 정확화
+- compare parse_neutral_ids: ISO-8601 등 비-ID 토큰 앞서도 카탈로그 접두사 우선
+- 회귀 테스트 +17(총 50)
+
+**→ 발견했으나 별도 (BL):**
+- **[BL-26] DEMO.md가 verify 미달(FORM-05)** — 발견ID 블록 뒤에 "## 이 다음은?" 절이 와서 "맨 마지막 줄" 계약 위반. v1.2.0 산출물이라 그렇고 직전 코드에서도 미달이었음(이번 회귀 아님). DEMO를 발견ID가 맨 끝에 오도록 재생성하거나, verify가 발견ID 뒤 설명 절을 허용하도록 완화할지 결정 필요.
+- 미수정 Optional 잔여(reviews에만): check_grade 외 일부 startswith 일관성 등은 영향 경미, BL-25에 흡수.
+
 ## G. 보류 결정 (2026-06-12)
 
 - **[BL-17] 위치·심각도 채점 — 보류 확정.** ID recall + 오탐 0 게이트로 핵심은 잡히고, 위치(파일:줄)는 4요소의 "어디?"에 적혀 사람이 본문에서 확인. 자동 위치 채점은 보고서 계약(4요소 자유 서술)을 무겁게 만드는 트레이드오프 대비 이득이 작다는 판단. 외부 코퍼스 검증(BL 외) 단계에서 재고.
