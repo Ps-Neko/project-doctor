@@ -74,9 +74,12 @@ def detect_mode(lines: list[str]) -> str | None:
 
 
 def find_last_content_line(lines: list[str]) -> str:
+    """마지막 내용 줄을 찾는다. 코드 펜스(```)는 표기일 뿐이므로 건너뛴다
+    (report-template 9절 예시가 발견ID 블록을 펜스로 감싼다)."""
     for line in reversed(lines):
-        if line.strip():
-            return line.strip()
+        stripped = line.strip()
+        if stripped and not stripped.startswith("```"):
+            return stripped
     return ""
 
 
