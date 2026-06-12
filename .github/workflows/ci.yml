@@ -1,0 +1,63 @@
+name: CI
+
+# 절차의 일관성이 이 저장소의 제품이므로, 채점기·형식 검증기·문서 링크를
+# 푸시/PR마다 자동 점검한다 (BACKLOG BL-15). 외부 의존성 없이 표준 라이브러리만 사용.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 채점기·형식 검증기 단위 테스트 (pytest)
+        run: python -m pytest tests/ -v
+
+      - name: 자체 픽스처 채점 회귀 (정답지 ↔ 정답지 = 100%·오탐 0)
+        # 정답지의 "심은 문제" ID를 그대로 보고서로 본뜬 합성 입력으로
+        # 채점기가 100%·오탐 0을 내는지 확인 (탐지 로직이 아니라 채점기 자체의 회귀 가드)
+        run: |
+          python - <<'PY'
+          import re, subprocess, sys
+          from pathlib import Path
+          ID = re.compile(r"[A-Z]+-\d{2,}")
+          base = Path("tests/fixtures")
+          fails = []
+          for exp in base.glob("*/EXPECTED.md"):
+              text = exp.read_text(encoding="utf-8-sig")
+              # "## 심은 문제" 표의 ID만 추출해 가짜 보고서를 만든다
+              ids, in_sec = [], False
+              for line in text.splitlines():
+                  s = line.strip()
+                  if s.startswith("## "):
+                      in_sec = s.startswith("## 심은 문제"); continue
+                  if in_sec and s.startswith("|"):
+                      m = ID.search(s)
+                      if m: ids.append(m.group())
+              ids = list(dict.fromkeys(ids))
+              if not ids:
+                  continue
+              rep = exp.parent / "_ci_synthetic_report.md"
+              rep.write_text("발견ID: " + ", ".join(ids) + "\n", encoding="utf-8")
+              r = subprocess.run([sys.executable, "tests/compare_report.py", str(rep), str(exp)],
+                                 capture_output=True, text=True, encoding="utf-8", errors="replace")
+              rep.unlink()
+              if r.returncode != 0:
+                  fails.append(f"{exp.parent.name}: {r.stdout.strip()}")
+          if fails:
+              print("채점 회귀 실패:"); [print(" ", f) for f in fails]; sys.exit(1)
+          print("자체 픽스처 채점 회귀: 전부 통과")
+          PY
+
+      - name: 문서 링크 검사
+        run: python tests/check_links.py
