@@ -13,19 +13,45 @@ EXPECTED_HEADING: str = "## 심은 문제"
 NEUTRAL_HEADING: str = "## 추가 보고 허용"
 EMPTY_MARK: str = "(없음)"
 ID_PATTERN = re.compile(r"[A-Z]+-\d{2,}")
+# 채점 중립 줄에서 ID로 인정할 카탈로그 접두사 — ISO-8601·UTF-16·SHA-256 같은
+# 비-ID 토큰(정답지 설명문에 등장 가능)을 ID로 오인하지 않도록 화이트리스트로 거른다.
+KNOWN_ID_PREFIXES = frozenset({
+    "DUP", "DEAD", "BIG", "HARD", "DOC", "TEST", "TMP", "STALE", "STRUCT",
+    "SEC", "PII", "REL", "HIST", "DEP", "LINT", "AIGEN",
+})
 
 
 def read_lines(path: str) -> list[str]:
-    # utf-8-sig: PowerShell 5.1 등이 만드는 BOM 붙은 UTF-8도 그대로 읽는다.
-    # errors="replace": cp949(ANSI)로 저장된 보고서가 와도 UnicodeDecodeError로 죽지 않고
-    #   깨진 문자만 치환해 채점을 계속한다(except OSError가 UnicodeDecodeError를 못 잡는 문제 회피).
+    # utf-8-sig: BOM 흡수. errors=replace: cp949(ANSI) 보고서도 트레이스백 없이 읽는다
+    #   (except OSError가 UnicodeDecodeError를 못 잡는 문제 회피).
     return Path(path).read_text(encoding="utf-8-sig", errors="replace").splitlines()
 
 
+def _is_expected_heading(stripped: str) -> bool:
+    """'## 심은 문제' 또는 '## 심은 문제 (14건)'만 정답 절로 인정 ('## 심은 문제 해설' 등 후속 절 차단)."""
+    return stripped == EXPECTED_HEADING or stripped.startswith(EXPECTED_HEADING + " (")
+
+
+def _is_neutral_heading(stripped: str) -> bool:
+    return stripped == NEUTRAL_HEADING or stripped.startswith(NEUTRAL_HEADING + " (")
+
+
 def parse_report_ids(lines: list[str]) -> list[str]:
-    """'발견ID:'로 시작하는 마지막 줄에서 쉼표 구분 ID를 추출한다."""
-    found = [ln.strip() for ln in lines
-             if ln.strip().startswith(REPORT_PREFIX)]
+    """'발견ID:'로 시작하는 마지막 줄에서 쉼표 구분 ID를 추출한다.
+
+    코드펜스(```) 안의 줄은 무시한다 — 템플릿 9절 예시나 부록의 '발견ID:' 예시가
+    실제 블록으로 오인되어 채점을 오염시키는 것을 막는다(verify가 '여러 개'를 따로 잡는다).
+    """
+    found, in_fence = [], False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if stripped.startswith(REPORT_PREFIX):
+            found.append(stripped)
     if not found:
         return []
     body = found[-1].split(":", 1)[1].strip()
@@ -44,21 +70,36 @@ def parse_revisit_lines(lines: list[str]) -> dict[str, str]:
     return extras
 
 
+def _cells(stripped: str) -> list[str]:
+    """표 행을 셀 리스트로 — 전각 파이프(｜) 정규화 + 셀의 백틱·공백 제거."""
+    normalized = stripped.replace("｜", "|")
+    return [c.strip().strip("`").strip() for c in normalized.strip("|").split("|")]
+
+
 def parse_expected_ids(lines: list[str]) -> list[str]:
-    """'## 심은 문제' 표의 ID 열을 추출한다(중복 제거, 순서 유지)."""
+    """'## 심은 문제' 표의 ID 열을 추출한다(중복 제거, 순서 유지).
+
+    견고성: 전각 파이프·백틱 감싼 셀·'발견 ID'처럼 공백 든 헤더를 허용하고,
+    같은 절 안에 표가 둘이면 표가 끊길 때 열 인덱스를 리셋해 둘째 표도 올바로 읽는다.
+    """
     ids: list[str] = []
     in_section, id_col = False, -1
     for line in lines:
-        stripped = line.strip()
+        stripped = line.strip().replace("｜", "|")
         if stripped.startswith("## "):
-            in_section, id_col = stripped.startswith(EXPECTED_HEADING), -1
+            in_section, id_col = _is_expected_heading(stripped), -1
             continue
-        if not in_section or not stripped.startswith("|"):
+        if not in_section:
             continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if not stripped.startswith("|"):
+            id_col = -1  # 표가 끊기면 다음 표를 위해 열 인덱스 리셋
+            continue
+        cells = _cells(stripped)
         if id_col < 0:
-            if "ID" in cells:
-                id_col = cells.index("ID")
+            for i, cell in enumerate(cells):
+                if cell.replace(" ", "") in ("ID", "발견ID"):  # 'GUID' 등은 제외(정확 매칭)
+                    id_col = i
+                    break
             continue
         if id_col >= len(cells) or set(cells[id_col]) <= set("-: "):
             continue  # 구분선(---)이나 빈 셀은 건너뛴다.
@@ -67,23 +108,27 @@ def parse_expected_ids(lines: list[str]) -> list[str]:
 
 
 def parse_neutral_ids(lines: list[str]) -> list[str]:
-    """'## 추가 보고 허용'(채점 중립) 절에서 줄마다 첫 ID 하나를 추출한다.
+    """'## 추가 보고 허용'(채점 중립) 절에서 줄마다 ID 하나를 추출한다.
 
-    줄 뒷부분의 설명에 다른 ID가 등장해도(예: "HARD-02 — DUP-01의 부산물")
-    그 줄의 중립 ID는 첫 번째 것 하나뿐이다.
+    줄에 'ISO-8601'처럼 ID 형식을 닮은 비-ID 토큰이 진짜 ID보다 앞서 와도,
+    카탈로그 접두사(KNOWN_ID_PREFIXES)에 속하는 첫 토큰만 ID로 인정한다.
     """
     ids: list[str] = []
     in_section = False
     for line in lines:
         stripped = line.strip()
         if stripped.startswith("## "):
-            in_section = stripped.startswith(NEUTRAL_HEADING)
+            in_section = _is_neutral_heading(stripped)
             continue
         if not in_section or not stripped.startswith(("-", "|")):
             continue
-        match = ID_PATTERN.search(stripped)
-        if match:
-            ids.append(match.group())
+        matches = [m.group() for m in ID_PATTERN.finditer(stripped)]
+        if not matches:
+            continue
+        # 카탈로그 접두사에 속하는 첫 토큰을 우선 채택(ISO-8601 등 비-ID 토큰이 앞서도 진짜 ID를
+        # 집는다). 알려진 접두사가 하나도 없으면 줄의 첫 매치로 폴백(미래 접두사·테스트 ID 허용).
+        known = [m for m in matches if m.split("-", 1)[0] in KNOWN_ID_PREFIXES]
+        ids.append(known[0] if known else matches[0])
     return list(dict.fromkeys(ids))
 
 
@@ -105,7 +150,8 @@ def main(argv: list[str]) -> int:
     expected_ids = parse_expected_ids(expected_lines)
     neutral_ids = parse_neutral_ids(expected_lines)
     if not expected_ids:
-        print("오류: 정답지의 '## 심은 문제' 표에서 ID를 찾지 못했습니다.")
+        print("오류: 정답지의 '## 심은 문제' 표에서 ID를 찾지 못했습니다 "
+              "(헤더 'ID' 열·표 형식을 확인하세요).")
         return 1
     missed = [i for i in expected_ids if i not in set(report_ids)]
     unique_report = list(dict.fromkeys(report_ids))

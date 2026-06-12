@@ -1,5 +1,15 @@
 # 변경 이력 (CHANGELOG)
 
+## v1.5.2 — 2026-06-12 (전체 코드 리뷰 결함 수정 — 채점기·검증기 파싱 견고성)
+- **verify check_grade**: 코드펜스 안 예시 등급줄이 펜스 밖 실제 위반 등급을 가리던 Critical 우회 수정(펜스 제외 + 등급줄 전수 검사). 종합 판정 헤딩 부제 허용(startswith)
+- **verify SECRET_PATTERNS**: GitHub 가변길이 토큰(`ghp_{36,255}`)·`gho_`/`ghs_`/`github_pat_` 변종·Google API 키(`AIza…`)·줄바꿈 든 PEM 추가 — 비밀키 거짓음성 축소
+- **verify check_four_fields**: 전역 substring 카운트 → 발견 항목(### 헤딩)별 검사로 거짓양성·거짓음성 제거. 발견ID:(없음)인데 본문 발견 있으면 모순 검출(기계블록 정상일 때만)
+- **verify read_text**: `errors="replace"` 추가(cp949 보고서 트레이스백 → compare와 일관화). detect_major_version은 표지 '스킬 버전:' 줄로 한정(본문 과거버전 오판 방지)
+- **발견ID 블록**: verify는 발견ID 줄이 여러 개(본문/부록 예시 + 실제)면 FORM-05로 잡고, compare는 펜스 안 예시 발견ID를 채점에서 제외 — 둘이 다른 줄을 보던 불일치 해소
+- **compare parse_expected_ids**: 전각 파이프(｜)·백틱 셀·'발견 ID' 공백 헤더 허용, 같은 절 2표에서 id_col 리셋, 'GUID' 함정 헤더 정확 매칭, 절 진입 정확화('## 심은 문제 해설' 후속 절 누출 차단)
+- **compare parse_neutral_ids**: ISO-8601 등 비-ID 토큰이 앞서도 카탈로그 접두사 ID 우선 채택
+- 회귀 테스트 +17(펜스 우회·비밀키 신형·열 인덱싱·2표·전각/백틱/공백헤더·cp949 등). 진단·보고·채점 계약 무변경
+
 ## v1.5.1 — 2026-06-12 (코드 리뷰 결함 수정 — 검증자 실측 재현 8건)
 - **[Critical] check_write_boundary**: 드라이브 상대경로(`C:foo`)·UNC가 "프로젝트 안"으로 오판되어 경계를 우회하던 결함 수정(Windows 실측: 파일이 루트 밖에 생성됨) — 드라이브 있고 루트 없는 경로는 거부, UNC·절대경로는 루트 결합 없이 해석. TOCTOU(심링크/정션 교체) 한계 문서화 + 통과 시 해석경로 출력
 - check_write_boundary: 빈/공백 경로도 거부(인자 실수 침묵 통과 방지)

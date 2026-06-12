@@ -152,3 +152,111 @@ def test_utf8_korean_path_and_content(tmp_path: Path) -> None:
     report.write_text(_report_md("발견ID: DUP-01"), encoding="utf-8")
     result = _run(report, expected)
     assert result.returncode == 0
+
+
+# --- 코드 리뷰 회귀 테스트 (v1.5.2: 파싱 견고성) ---
+
+def _write_expected(tmp_path: Path, body: str) -> Path:
+    expected = tmp_path / "EXPECTED.md"
+    expected.write_text("# 정답지\n\n" + body, encoding="utf-8")
+    return expected
+
+
+def test_id_in_second_column(tmp_path: Path) -> None:
+    """ID가 1열이 아니어도(위치|ID|심각도) 헤더 위치로 올바로 읽는다."""
+    expected = _write_expected(
+        tmp_path,
+        "## 심은 문제 (테스트)\n\n| 위치 | ID | 심각도 |\n|------|----|--------|\n"
+        "| a.py | DUP-01 | 🔴 |\n| b.py | DOC-01 | 🟡 |\n")
+    report = tmp_path / "r.md"
+    report.write_text(_report_md("발견ID: DUP-01, DOC-01"), encoding="utf-8")
+    result = _run(report, expected)
+    assert result.returncode == 0, result.stdout
+    assert "100.0%" in result.stdout
+
+
+def test_guid_header_not_mistaken_for_id(tmp_path: Path) -> None:
+    """헤더에 'GUID' 함정 셀이 있어도 정확히 'ID' 열만 잡는다."""
+    expected = _write_expected(
+        tmp_path,
+        "## 심은 문제 (테스트)\n\n| GUID | ID | 심각도 |\n|------|----|--------|\n"
+        "| g-1 | DUP-01 | 🔴 |\n")
+    report = tmp_path / "r.md"
+    report.write_text(_report_md("발견ID: DUP-01"), encoding="utf-8")
+    assert _run(report, expected).returncode == 0
+
+
+def test_fullwidth_pipe_table(tmp_path: Path) -> None:
+    """전각 파이프(｜)로 그린 표도 채점된다 (한국어 환경 손편집)."""
+    expected = _write_expected(
+        tmp_path,
+        "## 심은 문제 (테스트)\n\n｜ ID ｜ 위치 ｜\n｜----｜------｜\n｜ DUP-01 ｜ a.py ｜\n")
+    report = tmp_path / "r.md"
+    report.write_text(_report_md("발견ID: DUP-01"), encoding="utf-8")
+    assert _run(report, expected).returncode == 0
+
+
+def test_backtick_id_cell(tmp_path: Path) -> None:
+    """ID 셀이 백틱(`DUP-01`)으로 감싸여도 채점된다."""
+    expected = _write_expected(
+        tmp_path,
+        "## 심은 문제 (테스트)\n\n| ID | 위치 |\n|----|------|\n| `DUP-01` | a.py |\n")
+    report = tmp_path / "r.md"
+    report.write_text(_report_md("발견ID: DUP-01"), encoding="utf-8")
+    assert _run(report, expected).returncode == 0
+
+
+def test_space_in_header(tmp_path: Path) -> None:
+    """헤더가 '발견 ID'(공백 포함)여도 ID 열로 인식한다."""
+    expected = _write_expected(
+        tmp_path,
+        "## 심은 문제 (테스트)\n\n| 발견 ID | 위치 |\n|---------|------|\n| DUP-01 | a.py |\n")
+    report = tmp_path / "r.md"
+    report.write_text(_report_md("발견ID: DUP-01"), encoding="utf-8")
+    assert _run(report, expected).returncode == 0
+
+
+def test_two_tables_same_heading(tmp_path: Path) -> None:
+    """같은 '## 심은 문제' 절에 표가 둘이어도 둘째 표를 오염 없이 읽는다(id_col 리셋)."""
+    expected = _write_expected(
+        tmp_path,
+        "## 심은 문제 (테스트)\n\n| ID | 위치 |\n|----|------|\n| DUP-01 | a.py |\n\n"
+        "설명 문단.\n\n| 위치 | ID |\n|------|----|\n| b.py | DOC-01 |\n")
+    report = tmp_path / "r.md"
+    report.write_text(_report_md("발견ID: DUP-01, DOC-01"), encoding="utf-8")
+    result = _run(report, expected)
+    assert result.returncode == 0, result.stdout
+    assert "100.0%" in result.stdout  # '위치'·'b.py'가 가짜 ID로 분모를 부풀리지 않음
+
+
+def test_fenced_example_id_ignored(tmp_path: Path) -> None:
+    """보고서 끝 코드펜스 예시 발견ID는 채점에서 무시하고 펜스 밖 실제 줄을 쓴다."""
+    expected = _write_expected(tmp_path, _expected_md(["DUP-01", "DOC-01"]))
+    report = tmp_path / "r.md"
+    report.write_text(
+        "# 보고서\n발견ID: DUP-01, DOC-01\n\n부록 예시:\n```\n발견ID: 예시-99\n```\n",
+        encoding="utf-8")
+    result = _run(report, expected)
+    assert result.returncode == 0, result.stdout
+    assert "100.0%" in result.stdout
+
+
+def test_empty_expected_table_errors(tmp_path: Path) -> None:
+    """정답지 표가 비면 ZeroDivision 없이 친절한 오류로 떨어진다."""
+    expected = _write_expected(tmp_path, "## 심은 문제 (테스트)\n\n(표 없음)\n")
+    report = tmp_path / "r.md"
+    report.write_text(_report_md("발견ID: DUP-01"), encoding="utf-8")
+    result = _run(report, expected)
+    assert result.returncode == 1
+    assert "찾지 못했습니다" in result.stdout
+
+
+def test_neutral_iso_token_not_mistaken(tmp_path: Path) -> None:
+    """채점 중립 줄에 ISO-8601이 앞서 와도 진짜 ID(HARD-02)를 중립으로 인정한다."""
+    expected = _write_expected(
+        tmp_path,
+        _expected_md(["DUP-01"], neutral_lines=["ISO-8601 형식 관련 HARD-02 허용"]))
+    report = tmp_path / "r.md"
+    report.write_text(_report_md("발견ID: DUP-01, HARD-02"), encoding="utf-8")
+    result = _run(report, expected)
+    assert result.returncode == 0, result.stdout  # HARD-02가 중립 → 오탐 아님
