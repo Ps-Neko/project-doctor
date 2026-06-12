@@ -1,5 +1,13 @@
 # 변경 이력 (CHANGELOG)
 
+## v2.5.1 — 2026-06-12 (코드 리뷰 결함 수정 — 검증자 실측 재현 8건)
+- **[Critical] check_write_boundary**: 드라이브 상대경로(`C:foo`)·UNC 경계 우회 수정(거부) + TOCTOU 한계 문서화·해석경로 출력 + 빈/공백 경로 거부
+- compare_report: cp949 보고서 트레이스백 → `errors="replace"`(형제 스크립트와 일관화)
+- check_scoring_regression: 합성 보고서 tempfile화(레이스·잔존·동명파괴 제거), 채점기와 동일 ID추출(`parse_expected_ids`) 재사용, "N개 중 M개 채점" 분모 출력
+- check_version: 버전 깨짐을 표기없음과 구분해 실패 집계 + 단어경계 정규식
+- check_links: title 문법·쿼리스트링 분리로 오탐 제거
+- 단위 테스트 +3, 양축 CI. 진단·보고·채점 계약 무변경 (공개판 v1.5.1과 동일 수정)
+
 ## v2.5.0 — 2026-06-12 ("쓰기 경계 자동 검사")
 - 치료 실행 안전 강화: `tools/check_write_boundary.py` 신설 — 변경 예정 경로가 프로젝트 폴더 밖(절대 경로·`../` 탈출)이면 비0 종료. 스킬과 함께 설치돼 치료 직전 호출 가능. 읽기 전용
 - prescription-protocol 0장 4번(쓰기 경계 확인)에 도구 호출 안내 추가 — 없으면 수동 폴백

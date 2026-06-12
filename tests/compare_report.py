@@ -17,7 +17,9 @@ ID_PATTERN = re.compile(r"[A-Z]+-\d{2,}")
 
 def read_lines(path: str) -> list[str]:
     # utf-8-sig: PowerShell 5.1 등이 만드는 BOM 붙은 UTF-8도 그대로 읽는다.
-    return Path(path).read_text(encoding="utf-8-sig").splitlines()
+    # errors="replace": cp949(ANSI)로 저장된 보고서가 와도 UnicodeDecodeError로 죽지 않고
+    #   깨진 문자만 치환해 채점을 계속한다(except OSError가 UnicodeDecodeError를 못 잡는 문제 회피).
+    return Path(path).read_text(encoding="utf-8-sig", errors="replace").splitlines()
 
 
 def parse_report_ids(lines: list[str]) -> list[str]:

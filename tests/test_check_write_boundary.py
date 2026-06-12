@@ -1,9 +1,12 @@
 """check_write_boundary.py (쓰기 경계 검사 도구) 단위 테스트."""
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 TOOL = (Path(__file__).resolve().parent.parent
         / "skills" / "project-doctor" / "tools" / "check_write_boundary.py")
@@ -60,3 +63,25 @@ def test_root_not_dir_errors(tmp_path):
     r = run(missing, "a.py")
     assert r.returncode == 1
     assert "폴더가 아닙니다" in r.stdout
+
+
+def test_empty_path_rejected(tmp_path):
+    # 빈/공백 경로는 인자 실수 신호 — 침묵 통과 금지.
+    r = run(tmp_path, "   ")
+    assert r.returncode == 1
+    assert "경계 위반" in r.stdout
+
+
+@pytest.mark.skipif(os.name != "nt", reason="드라이브 상대경로/UNC는 Windows 전용 위험")
+def test_drive_relative_path_rejected(tmp_path):
+    # C:foo — 드라이브 상대경로. OS가 'C: 드라이브의 cwd' 기준으로 해석하므로 루트 밖으로 샐 수 있다.
+    r = run(tmp_path, "C:foo")
+    assert r.returncode == 1, r.stdout
+    assert "경계 위반" in r.stdout
+
+
+@pytest.mark.skipif(os.name != "nt", reason="UNC 경로는 Windows 전용")
+def test_unc_path_rejected(tmp_path):
+    r = run(tmp_path, r"\\server\share\evil.txt")
+    assert r.returncode == 1, r.stdout
+    assert "경계 위반" in r.stdout
