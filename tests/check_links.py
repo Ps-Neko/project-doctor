@@ -1,7 +1,8 @@
-"""저장소 내 Markdown 파일의 상대 링크가 실재하는지 검사한다 (BACKLOG BL-15).
+"""저장소 내 Markdown 파일의 상대 링크가 실재하는지 검사한다 (BACKLOG BL-15: CI 문서 링크 검사).
 
 `[텍스트](상대경로)` 형태의 링크 중 외부 URL(http/https/mailto)과 앵커(#...)를 제외한
 파일 링크가 실제로 존재하는지 확인한다. 깨진 링크가 하나라도 있으면 종료 코드 1.
+이미지 임베드(![alt](...))와 코드펜스(```) 안의 예시 링크는 검사 대상에서 제외한다.
 
 용도: CI에서 문서 링크가 리팩터링으로 깨지지 않았는지 자동 확인.
 """
@@ -12,7 +13,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+# (?<!!): 이미지 임베드 ![alt](...)는 제외 (텍스트 링크만).
+LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 # 검사 대상에서 제외할 디렉터리
 SKIP_DIRS = {".git", "node_modules", ".pytest_cache", "__pycache__"}
 
@@ -22,9 +24,21 @@ def iter_markdown() -> list[Path]:
             if not any(part in SKIP_DIRS for part in p.relative_to(ROOT).parts)]
 
 
+def strip_code_fences(text: str) -> str:
+    """코드펜스(```) 블록을 제거한다 — 펜스 안 예시 링크를 검사하지 않기 위함."""
+    out, in_fence = [], False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            out.append(line)
+    return "\n".join(out)
+
+
 def check_file(md: Path) -> list[str]:
     broken: list[str] = []
-    text = md.read_text(encoding="utf-8-sig", errors="replace")
+    text = strip_code_fences(md.read_text(encoding="utf-8-sig", errors="replace"))
     for target in LINK.findall(text):
         target = target.strip()
         # 마크다운 title 문법 분리: [t](./a.md "설명") → 공백+따옴표 이후를 떼어낸다.
@@ -38,7 +52,7 @@ def check_file(md: Path) -> list[str]:
             continue
         resolved = (md.parent / path_part).resolve()
         if not resolved.exists():
-            broken.append(f"{md.relative_to(ROOT)} → {target}")
+            broken.append(f"{md.relative_to(ROOT)} -> {target}")
     return broken
 
 
@@ -55,9 +69,9 @@ def main() -> int:
     if all_broken:
         print(f"깨진 링크: {len(all_broken)}건")
         for b in all_broken:
-            print(f"  ✗ {b}")
+            print(f"  - {b}")
         return 1
-    print("깨진 링크: 0건 ✓")
+    print("깨진 링크: 0건 (통과)")
     return 0
 
 

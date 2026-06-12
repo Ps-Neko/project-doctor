@@ -119,10 +119,8 @@
 
 이 프로젝트를 회사 공유나 GitHub 공개 전이라면 `release-check`(공개 전 검진)를 받아보세요 — 비밀키·개인정보까지 점검합니다.
 
-발견ID: DUP-01, DEAD-01, DEAD-02, BIG-01, BIG-02, BIG-03, HARD-01, HARD-02, HARD-03, DOC-01, DOC-03, TEST-01, TMP-01, STALE-01, STALE-02, STRUCT-03
-
----
-
 ## 이 다음은?
 
 보고서에서 항목을 골라 `"심각 2 실행해줘"`라고 하면 — 변경 파일 목록 제시 → 체크포인트 → 수정 → 검증 → **되돌리기 명령 한 줄**까지 자동으로 진행됩니다. 승인하지 않은 항목은 1byte도 건드리지 않습니다.
+
+발견ID: DUP-01, DEAD-01, DEAD-02, BIG-01, BIG-02, BIG-03, HARD-01, HARD-02, HARD-03, DOC-01, DOC-03, TEST-01, TMP-01, STALE-01, STALE-02, STRUCT-03

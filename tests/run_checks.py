@@ -65,7 +65,7 @@ def main(argv: list[str]) -> int:
     failed = [name for name, code in results if code != 0]
     for name, code in results:
         print(f"  {name}: {'통과' if code == 0 else '미달'}")
-    print(f"종합: {'전부 통과 ✓' if not failed else '미달 — ' + ', '.join(failed)}")
+    print(f"종합: {'전부 통과' if not failed else '미달 — ' + ', '.join(failed)}")
     return 0 if not failed else 1
 
 
