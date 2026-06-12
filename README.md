@@ -1,5 +1,7 @@
 # 프로젝트 주치의 (Project Doctor)
 
+[![CI](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml)
+
 **AI로 만들다 엉킨 프로젝트를, 비개발자도 읽을 수 있는 진단 보고서로 바꿔주는 Claude Code 스킬입니다.**
 무엇이 문제인지 → 어디를 고치면 되는지 → 무엇부터 승인하면 되는지. 승인한 것만 고치고, 항상 되돌릴 수 있게.
 
