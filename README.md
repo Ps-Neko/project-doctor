@@ -4,6 +4,7 @@
 무엇이 문제인지 → 어디를 고치면 되는지 → 무엇부터 승인하면 되는지. 승인한 것만 고치고, 항상 되돌릴 수 있게.
 
 📄 **[3분 데모 — 실제 진단 보고서 보기](./DEMO.md)** · 📊 **[측정 기록 (EVALS)](./EVALS.md)**
+🩺 **실제 사례**: [검진→치료→재검진 실치료기 (D→C)](./docs/cases/case1-reactor.md) · [은퇴한 전설 npm `request` 부검](./docs/cases/case2-request.md) · ❓ [FAQ — "그냥 Claude한테 시키면 되잖아요?"](./docs/FAQ.md)
 
 > **현재 버전: v1.2.0** — 전 모드 동작 + 결과지 개편. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
 
