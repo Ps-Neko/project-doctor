@@ -67,7 +67,7 @@ GPT가 공개판만 보고 제안한 22건 중 16건은 이미 구현(다수 초
 - check_links: title·쿼리 분리
 
 **→ 미반영 (Optional/Nit, 비긴급 — BL-25로 묶음):**
-- **[BL-25] 코드 위생 정리** — ① 공유 유틸 `_common.py`로 중복 제거(stdout reconfigure 7곳·read_lines·ID 정규식 3곳) ② 종료코드 분리(사용법 오류 2 vs 게이트 미달 1) ③ 출력 이모지 잔존(`✓` in check_links) 텍스트화 — 사용자 이모지 금지 규칙 정합 ④ check_links 이미지(`![]()`)·코드펜스 내 링크 처리 ⑤ docstring BL 번호 1:1 교정. 전부 동작 무관 위생 작업.
+- **[BL-25] 코드 위생 정리** — **③④⑤ 완료 (v1.5.3/v2.5.3)**: 이모지 `✓` 제거(check_links·run_checks), check_links 이미지/펜스 제외+단위테스트 6건, docstring BL 번호 역할 명시. **잔여 ①②**: ① 공유 유틸 `_common.py`(stdout reconfigure·read_lines·ID 정규식 중복) — ROI 낮음(작은 파일들 + check_write_boundary는 skills/tools라 tests/_common import 불가로 부분 통일만 됨) ② 종료코드 분리(사용법 2 vs 미달 1) — 테스트 다수가 ==1 단언이라 깨짐 위험 + Nit. 둘 다 보류.
 
 ## J. 4차 전체 코드 리뷰 (2026-06-12, verify·compare 채점기 집중)
 
@@ -84,7 +84,8 @@ GPT가 공개판만 보고 제안한 22건 중 16건은 이미 구현(다수 초
 - 회귀 테스트 +17(총 50)
 
 **→ 발견했으나 별도 (BL):**
-- **[BL-26] DEMO.md가 verify 미달(FORM-05)** — 발견ID 블록 뒤에 "## 이 다음은?" 절이 와서 "맨 마지막 줄" 계약 위반. v1.2.0 산출물이라 그렇고 직전 코드에서도 미달이었음(이번 회귀 아님). DEMO를 발견ID가 맨 끝에 오도록 재생성하거나, verify가 발견ID 뒤 설명 절을 허용하도록 완화할지 결정 필요.
+- **[BL-26] DEMO.md가 verify 미달(FORM-05)** — **→ 완료 (공개판 v1.5.3)**: "## 이 다음은?" 절을 발견ID 앞으로 옮겨 발견ID를 맨 마지막 줄로. 이제 공개판 DEMO가 verify FORM-05 통과(0건). 계약(발견ID 맨 마지막)을 약화시키지 않고 데모를 계약 준수하게 한 쪽 선택.
+- **[BL-27] dev/automation-main DEMO.md가 구식 양식(v1.0.0 "진단 보고서")** — 공개판 DEMO는 v1.2.0 결과지 양식인데, dev/automation-main DEMO는 결과지 개편(v2.1) 이전의 "# 진단 보고서 / 스킬 버전: v1.0.0" 양식으로 방치돼 있음. dev는 v2.5.3인데 데모가 v1.0.0 양식이라 드리프트. dev DEMO를 결과지 양식(또는 v2 단골 기능 데모)으로 갱신 필요. 2026-06-12 BL-26 작업 중 실수로 공개판 DEMO를 dev에 덮었다가 복원함(범위 밖이라). 갱신 시 dev DEMO를 어떤 버전·기능 데모로 할지 결정 동반.
 - 미수정 Optional 잔여(reviews에만): check_grade 외 일부 startswith 일관성 등은 영향 경미, BL-25에 흡수.
 
 ## G. 보류 결정 (2026-06-12)
