@@ -172,6 +172,13 @@ def test_zero_findings_skips_four_fields(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_fenced_id_block_passes(tmp_path: Path) -> None:
+    """발견ID 블록을 코드 펜스로 감싼 표기(템플릿 9절 예시 그대로)도 통과."""
+    result = _write_and_run(
+        tmp_path, _checkup_report(found_line="```\n발견ID: DUP-01\n```"))
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_v1_report_without_homework_passes(tmp_path: Path) -> None:
     """숙제 줄은 v2.0부터의 계약 — v1.x 보고서(공개판)는 없어도 통과."""
     result = _write_and_run(
