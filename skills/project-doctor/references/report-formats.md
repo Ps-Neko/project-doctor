@@ -26,16 +26,17 @@
 
 저장 위치·쓰기 경계는 SKILL.md 절대 규칙 7을 따른다 — 같은 보고서의 형식 변형(예: `.md`+`.html`)은 보고서 1건으로 본다.
 
-## 2. HTML 인쇄용 (.html) 규칙
+## 2. HTML 인쇄용 (.html) 규칙 — "병원 결과지" 디자인
 
 비개발자가 회사 공유·인쇄·PDF 변환에 쓰는 형식이다. 변환 도구 없이 스킬이 직접 작성한다.
+디자인 목표: **병원 건강검진 결과지처럼** — 큰 등급 배지, 신호등 판정 알약(pill), 처방 강조 상자, 심각도별 색 테두리 카드. 회차가 달라도 같은 모양이 나오도록 아래 골격의 클래스·구조를 그대로 쓴다.
 
 **자기완결 의무 (절대 준수):**
 - 파일 하나로 완결 — CSS는 `<style>`로 **인라인**. 외부 리소스(CDN·웹폰트·외부 이미지·링크된 CSS/JS) **금지** (오프라인에서도, 사내망에서도 열려야 한다).
 - `<script>` 태그 **일절 금지** (보안 — 받은 사람이 안심하고 열 수 있어야 한다).
 - 인코딩: `<meta charset="utf-8">` + 파일은 UTF-8(BOM 없음).
 
-**골격** (이대로 시작해 본문만 채운다):
+**CSS 골격** (그대로 복사해 쓴다 — 임의 변경 금지, 색·클래스가 디자인 계약이다):
 
 ```html
 <!doctype html>
@@ -44,36 +45,132 @@
 <meta charset="utf-8">
 <title>프로젝트 건강검진 결과지 — <프로젝트 이름></title>
 <style>
-  body { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-         max-width: 800px; margin: 2rem auto; padding: 0 1rem;
-         color: #222; line-height: 1.6; }
-  h1 { border-bottom: 3px solid #333; padding-bottom: .3rem; }
-  .grade { font-size: 2.2rem; font-weight: bold; margin: .5rem 0; }
-  .grade.green { color: #1a7f37; } .grade.yellow { color: #b58900; } .grade.red { color: #c0392b; }
-  table { border-collapse: collapse; width: 100%; margin: .8rem 0; }
-  th, td { border: 1px solid #ccc; padding: .4rem .6rem; text-align: left; }
-  th { background: #f5f5f5; }
-  code { background: #f2f2f2; padding: .1rem .3rem; border-radius: 3px; }
-  blockquote { border-left: 4px solid #ddd; margin: .8rem 0; padding: .2rem .8rem; color: #555; }
-  .machine { color: #999; font-size: .8rem; margin-top: 2rem;
-             border-top: 1px dashed #ccc; padding-top: .5rem; }
-  .howto-pdf { background: #eef6ff; padding: .6rem .8rem; border-radius: 6px; font-size: .9rem; }
-  @media print { .howto-pdf { display: none; } body { margin: 0; } }
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+         background: #eef1f5; color: #1f2937; margin: 0; line-height: 1.65; }
+  .sheet { max-width: 860px; margin: 1.5rem auto; background: #fff;
+           box-shadow: 0 2px 14px rgba(0,0,0,.08); border-radius: 10px; overflow: hidden; }
+  .band { background: #1e3a5f; color: #fff; padding: 1.4rem 2rem 1.2rem; }
+  .band .kind { font-size: .85rem; letter-spacing: .12em; opacity: .85; }
+  .band h1 { margin: .15rem 0 0; font-size: 1.55rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: .4rem 1.6rem; padding: .7rem 2rem;
+          background: #f0f4f8; border-bottom: 1px solid #dbe3ec; font-size: .82rem; color: #475569; }
+  .meta b { color: #1f2937; font-weight: 600; }
+  .inner { padding: 1.6rem 2rem 2rem; }
+  h2 { font-size: 1.05rem; color: #1e3a5f; border-bottom: 2px solid #e2e8f0;
+       padding-bottom: .35rem; margin: 2rem 0 .9rem; }
+  h2:first-child { margin-top: 0; }
+  .verdict { display: flex; gap: 1.4rem; align-items: center; margin: .4rem 0 1rem; }
+  .badge { flex: 0 0 auto; width: 118px; height: 118px; border-radius: 50%;
+           display: flex; flex-direction: column; align-items: center; justify-content: center;
+           font-weight: 800; border: 6px solid; }
+  .badge .g { font-size: 3rem; line-height: 1; }
+  .badge .w { font-size: .78rem; font-weight: 700; margin-top: .15rem; }
+  .grade-a, .grade-b { color: #15803d; border-color: #4ade80; background: #f0fdf4; }
+  .grade-c { color: #b45309; border-color: #fbbf24; background: #fffbeb; }
+  .grade-d { color: #b91c1c; border-color: #f87171; background: #fef2f2; }
+  .verdict .word { font-size: 1.35rem; font-weight: 700; margin: 0 0 .3rem; }
+  .legend { font-size: .78rem; color: #6b7280; }
+  .opinion { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #1e3a5f;
+             border-radius: 6px; padding: .7rem 1rem; margin-top: .9rem; font-size: .95rem; }
+  .opinion b { color: #1e3a5f; }
+  .chips { display: flex; gap: .5rem; margin: .9rem 0 .2rem; flex-wrap: wrap; }
+  .chip { border-radius: 999px; padding: .22rem .85rem; font-size: .85rem; font-weight: 700; }
+  .chip.red { background: #fee2e2; color: #b91c1c; }
+  .chip.amber { background: #fef3c7; color: #92400e; }
+  .chip.gray { background: #f3f4f6; color: #4b5563; }
+  table { border-collapse: collapse; width: 100%; margin: .6rem 0; font-size: .92rem; }
+  th, td { border: 1px solid #e2e8f0; padding: .5rem .7rem; text-align: left; vertical-align: top; }
+  th { background: #f0f4f8; color: #334155; font-size: .85rem; }
+  .pill { display: inline-block; white-space: nowrap; border-radius: 999px;
+          padding: .1rem .6rem; font-size: .8rem; font-weight: 700; }
+  .pill.green { background: #dcfce7; color: #15803d; }
+  .pill.amber { background: #fef3c7; color: #92400e; }
+  .pill.red { background: #fee2e2; color: #b91c1c; }
+  .rx { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 6px solid #1d4ed8;
+        border-radius: 6px; padding: .9rem 1.1rem; margin: .8rem 0; }
+  .rx .now { font-size: 1.02rem; font-weight: 700; color: #1e3a8a; }
+  .rx .next { margin-top: .35rem; font-size: .9rem; color: #374151; }
+  .note { font-size: .82rem; color: #6b7280; margin: .5rem 0 0; }
+  .card { border: 1px solid #e5e7eb; border-left-width: 6px; border-radius: 6px;
+          margin: .85rem 0; padding: .8rem 1rem .6rem; break-inside: avoid; }
+  .card.sev-red { border-left-color: #dc2626; }
+  .card.sev-amber { border-left-color: #d97706; }
+  .card.sev-gray { border-left-color: #9ca3af; }
+  .card .head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .45rem; }
+  .sev { border-radius: 4px; padding: .08rem .5rem; font-size: .78rem; font-weight: 800; }
+  .sev.red { background: #dc2626; color: #fff; }
+  .sev.amber { background: #d97706; color: #fff; }
+  .sev.gray { background: #6b7280; color: #fff; }
+  .idtag { font-family: Consolas, monospace; font-size: .78rem; background: #f3f4f6;
+           border: 1px solid #e5e7eb; border-radius: 4px; padding: .05rem .4rem; color: #475569; }
+  .card .title { font-weight: 700; font-size: .98rem; }
+  .kv { display: grid; grid-template-columns: 7.2rem 1fr; gap: .25rem .6rem; font-size: .9rem; }
+  .kv dt { font-weight: 700; color: #1e3a5f; }
+  .kv dd { margin: 0; }
+  .approve { font-family: Consolas, monospace; background: #f0fdf4; border: 1px dashed #86efac;
+             border-radius: 4px; padding: 0 .45rem; color: #166534; }
+  .appendix { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+              padding: .7rem 1.1rem; font-size: .88rem; }
+  .appendix li { margin: .15rem 0; }
+  .machine { color: #9ca3af; font-size: .76rem; margin-top: 2rem;
+             border-top: 1px dashed #d1d5db; padding-top: .55rem;
+             font-family: Consolas, monospace; word-break: break-all; }
+  .howto-pdf { max-width: 860px; margin: .9rem auto 0; background: #eef6ff; border: 1px solid #bfdbfe;
+               padding: .6rem .9rem; border-radius: 8px; font-size: .88rem; color: #1e40af; }
+  @media print {
+    body { background: #fff; }
+    .sheet { box-shadow: none; margin: 0; max-width: none; border-radius: 0; }
+    .howto-pdf { display: none; }
+    .card, .rx, .opinion, table { break-inside: avoid; }
+  }
 </style>
 </head>
+```
+
+**본문 구조 (이 순서 그대로 — md 보고서의 절 순서와 동일):**
+
+```html
 <body>
 <p class="howto-pdf">📄 이 파일을 PDF로 만들려면: 인쇄(Ctrl+P) → 대상에서 "PDF로 저장" 선택. (이 안내 상자는 인쇄물에는 나오지 않습니다)</p>
-<!-- 여기에 보고서 본문: 결과지 3블록 → 발견 항목(ID+4요소) → 다음 진료 안내 -->
-<p class="machine">기계 판독용 — 발견ID: DUP-01, …</p>
+<div class="sheet">
+  <div class="band"><div class="kind">PROJECT DOCTOR · 건강검진 결과지</div><h1>🏥 <프로젝트 이름></h1></div>
+  <div class="meta"><span><b>환자</b> …</span><span><b>검진일</b> …</span><span><b>분석 파일</b> …</span><span><b>스킬 버전</b> …</span><span><b>모드</b> …</span></div>
+  <div class="inner">
+    <h2>종합 판정</h2>
+    <div class="verdict">
+      <div class="badge grade-d"><span class="g">D</span><span class="w">치료가 필요해요</span></div>
+      <div><p class="word">🔴 치료가 필요해요</p><p class="legend">등급 읽는 법 + 합산 설명 (md와 동일 문구)</p></div>
+    </div>
+    <div class="opinion"><b>의사 소견</b> — …</div>
+    <div class="chips"><span class="chip red">🔴 심각 N건</span><span class="chip amber">🟡 권장 N건</span><span class="chip gray">⚪ 참고 N건</span></div>
+    <h2>부위별 소견</h2>
+    <table> … 판정 칸은 <span class="pill red|amber|green">…</span> … </table>
+    <h2>오늘의 처방</h2>
+    <div class="rx"><div class="now">👉 당장 1건만 하신다면 — …</div><div class="next">승인 명령 + 📅 재검 권고</div></div>
+    <h2>상세 소견</h2>
+    <div class="card sev-red">  <!-- 발견 항목마다 카드 1개 -->
+      <div class="head"><span class="sev red">심각 1</span><span class="idtag">DUP-01</span><span class="title">제목</span></div>
+      <dl class="kv"><dt>무슨 뜻인가요?</dt><dd>…</dd><dt>어디?</dt><dd>…</dd><dt>고치면?</dt><dd>…</dd>
+      <dt>승인 명령</dt><dd><span class="approve">"심각 1 실행해줘"</span></dd></dl>
+    </div>
+    <h2>부록: 나머지 발견 항목</h2>  <!-- 압도 방지 적용 시에만 -->
+    <div class="appendix"><ul><li>🟡 <span class="idtag">ID</span> 제목 — 위치</li></ul></div>
+    <h2>다음 진료 안내</h2> <ul>…</ul>
+    <p class="machine">기계 판독용 — 스킬 버전: vX.Y.Z · 숙제: …<br>발견ID: …</p>
+  </div>
+</div>
 </body>
 </html>
 ```
 
-**내용 매핑 규칙:**
-- 종합 판정 등급은 `.grade` + 색상 클래스(A·B=green / C=yellow / D=red) — 등급↔표현 고정표의 판정어 그대로.
-- 표(부위별 소견·비교표)는 `<table>`로, 발견 항목의 4요소는 굵은 라벨 그대로 옮긴다.
-- **기계 판독 줄(`비교:`·`숙제:`·`발견ID:`)도 문서 끝 `.machine` 단락에 텍스트 그대로 포함** — 작게 표시하되 생략 금지 (이 파일만 남아도 추적 가능해야 한다).
+**매핑 규칙:**
+- 등급 배지: 종합 등급 → `grade-a/b/c/d` 클래스 + 등급↔표현 고정표의 판정어 그대로 (배지 안 `w`와 옆 `word` 모두).
+- 심각도: 🔴=`sev-red`/`sev red`/`pill red`, 🟡=`sev-amber`/`sev amber`/`pill amber`, ⚪=`sev-gray`, 부위 🟢=`pill green`.
+- 재검진이면 표지 `meta`에 `<span><b>등급 추이</b> 5월 D → 오늘 C</span>` 1칸 추가, "지난 검진과 비교" 표는 부위별 소견 다음에 같은 `table`로.
+- **기계 판독 줄(`비교:`·`숙제:`·`발견ID:`)은 문서 끝 `.machine` 단락에 텍스트 그대로 포함** — 작게 표시하되 생략 금지 (이 파일만 남아도 추적 가능해야 한다).
 - 채점·재검진 비교의 정본은 어디까지나 `.md`/채팅 보고서다 — 채점기는 HTML을 읽지 않는다.
+- 다른 모드(초진 차트·공개 전 검진 등)도 같은 골격을 쓰되, `band .kind`와 절 구성만 그 모드의 md 구성을 따른다 (예: 초진 차트는 등급 배지 대신 "정밀 등급은 checkup에서" 한 줄).
 
 ## 3. 워드 (.docx) 규칙 — 변환 도구가 있을 때만
 
