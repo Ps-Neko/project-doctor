@@ -6,3 +6,6 @@ __pycache__/
 
 # 저장소 루트에 생기는 진료기록부 (자기 검진 시) — 픽스처 안의 .project-doctor는 의도된 표본이므로 루트만 제외
 /.project-doctor/
+
+# 회사 MIP가 CSV를 자동 암호화해 남기는 파일 — 추적 제외 (BACKLOG BL-13)
+*.pfile
