@@ -61,7 +61,7 @@ macOS/Linux: `mkdir -p ~/.claude/skills && cp -r skills/project-doctor ~/.claude
 ## 저장소 구성
 
 ```
-skills/project-doctor/   ← 설치되는 스킬 본체 (SKILL.md + 참조 문서 7개)
+skills/project-doctor/   ← 설치되는 스킬 본체 (SKILL.md + 참조 문서 8개)
 tests/                   ← 품질 측정 도구: 채점 스크립트 + pytest
 tests/fixtures/          ← 일부러 문제를 심은 테스트 프로젝트 4종 + 정답지
 SPEC.md / PLAN.md        ← 이 스킬의 명세와 구현 계획 (개발 과정 기록)
