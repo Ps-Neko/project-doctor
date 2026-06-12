@@ -8,7 +8,7 @@
 📄 **[3분 데모 — 실제 진단 보고서 보기](./DEMO.md)** · 📊 **[측정 기록 (EVALS)](./EVALS.md)**
 🩺 **실제 사례**: [검진→치료→재검진 실치료기 (D→C)](./docs/cases/case1-reactor.md) · [은퇴한 전설 npm `request` 부검](./docs/cases/case2-request.md) · ❓ [FAQ — "그냥 Claude한테 시키면 되잖아요?"](./docs/FAQ.md)
 
-> **현재 버전: v1.6.0** — 전 모드 동작 + 결과지 개편 + 처방 실행 전 전/후 변경 내용 미리보기 + 쓰기 경계 자동 검사 + 보고서를 마크다운/HTML(클리니컬 결과지 디자인)/PDF(내장 브라우저 자동 변환)/워드(변환 도구 있을 때)로 받기. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
+> **현재 버전: v1.7.0** — 전 모드 동작 + 결과지 개편 + 처방 실행 전 전/후 변경 내용 미리보기 + 쓰기 경계 자동 검사 + 보고서를 마크다운/HTML(클리니컬 결과지 디자인)/PDF(내장 브라우저 자동 변환)/워드(변환 도구 있을 때)로 받기. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
 
 ## 무엇을 해주나요
 
