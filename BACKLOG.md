@@ -54,6 +54,21 @@ GPT가 공개판만 보고 제안한 22건 중 16건은 이미 구현(다수 초
 - **[BL-22] 위치 정확도 샘플링 게이트** — 리뷰어 3순위(BL-17 보류의 절충). 완전 자동 채점 대신 fixture 일부에 `핵심 ID → file:line` 기대값을 두고 "상위 5개 ID 위치만 정규식 검사". 보고서 자유 서술 안 깨고 최소 위치 오진 방어. BL-17 전면 보류 대비 가벼운 중간안.
 - **[BL-23] 재방문 fallback 강화** — 리뷰어 5순위. 기록부 손상·구버전 필드 부재 시 조용한 생략 규칙은 있으나(record-format), 기록 파싱이 애매할 때 "기본 checkup 보고서로 자동 강등"하는 명시적 fallback을 더 강하게.
 
+## I. 3차 코드 리뷰 (2026-06-12, 다중 에이전트 5축 적대 리뷰 + 검증자 실측 재현)
+
+> code-review-and-quality 스킬로 이번 세션 신규 코드 7개를 3관점(정확성·보안·아키텍처) 병렬 리뷰 후, Critical/Required를 검증 에이전트가 실제 입력으로 재현. 검증된 8건 즉시 수정 → **공개판 v1.5.1 / dev v2.5.1** 배포.
+
+**→ 수정 완료 (v1.5.1/v2.5.1):**
+- [Critical] check_write_boundary: `C:foo`(드라이브 상대경로)·UNC 경계 우회 — 거부 + TOCTOU 문서화·해석경로 출력 + 빈경로 거부. Windows 실측 재현됐던 것
+- check_write_boundary: 심링크/정션 TOCTOU — 완전 차단은 불가(검사≠쓰기)라 한계 문서화 + 통과 시 canonical 경로 출력으로 완화
+- compare_report: cp949 트레이스백 → errors=replace
+- check_scoring_regression: tempfile화 + parse_expected_ids 재사용(가드-채점기 단일화) + 분모 출력
+- check_version: 버전 깨짐 실패 집계 + 단어경계
+- check_links: title·쿼리 분리
+
+**→ 미반영 (Optional/Nit, 비긴급 — BL-25로 묶음):**
+- **[BL-25] 코드 위생 정리** — ① 공유 유틸 `_common.py`로 중복 제거(stdout reconfigure 7곳·read_lines·ID 정규식 3곳) ② 종료코드 분리(사용법 오류 2 vs 게이트 미달 1) ③ 출력 이모지 잔존(`✓` in check_links) 텍스트화 — 사용자 이모지 금지 규칙 정합 ④ check_links 이미지(`![]()`)·코드펜스 내 링크 처리 ⑤ docstring BL 번호 1:1 교정. 전부 동작 무관 위생 작업.
+
 ## G. 보류 결정 (2026-06-12)
 
 - **[BL-17] 위치·심각도 채점 — 보류 확정.** ID recall + 오탐 0 게이트로 핵심은 잡히고, 위치(파일:줄)는 4요소의 "어디?"에 적혀 사람이 본문에서 확인. 자동 위치 채점은 보고서 계약(4요소 자유 서술)을 무겁게 만드는 트레이드오프 대비 이득이 작다는 판단. 외부 코퍼스 검증(BL 외) 단계에서 재고.
