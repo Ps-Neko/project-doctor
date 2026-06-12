@@ -27,11 +27,13 @@ def check_file(md: Path) -> list[str]:
     text = md.read_text(encoding="utf-8-sig", errors="replace")
     for target in LINK.findall(text):
         target = target.strip()
+        # 마크다운 title 문법 분리: [t](./a.md "설명") → 공백+따옴표 이후를 떼어낸다.
+        target = re.split(r'\s+["\']', target, maxsplit=1)[0]
         # 외부 URL·메일·순수 앵커는 검사하지 않는다.
         if target.startswith(("http://", "https://", "mailto:", "#")):
             continue
-        # 앵커가 붙은 경우 파일 경로만 분리.
-        path_part = target.split("#", 1)[0]
+        # 앵커(#)와 쿼리스트링(?)을 떼어 파일 경로만 남긴다.
+        path_part = target.split("#", 1)[0].split("?", 1)[0]
         if not path_part:
             continue
         resolved = (md.parent / path_part).resolve()
