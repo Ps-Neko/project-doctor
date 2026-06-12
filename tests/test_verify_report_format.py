@@ -192,3 +192,87 @@ def test_bom_utf8_report_is_readable(tmp_path: Path) -> None:
     """PowerShell 5.1(Set-Content)이 만드는 BOM 붙은 UTF-8 보고서도 검사된다."""
     result = _write_and_run(tmp_path, _checkup_report(), encoding="utf-8-sig")
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+# --- 코드 리뷰 회귀 테스트 (v1.5.2: 펜스 우회·비밀키·표지·인코딩) ---
+
+def test_fenced_grade_example_does_not_mask_violation(tmp_path: Path) -> None:
+    """펜스 안 올바른 등급 예시가 펜스 밖 잘못된 실제 등급을 가리지 못한다."""
+    grade = "```markdown\n# 🟢 A — 건강해요\n```\n# 🔴 D — 양호해요"
+    result = _write_and_run(tmp_path, _checkup_report(grade_line=grade))
+    assert result.returncode == 1
+    assert "FORM-07" in result.stdout
+
+
+def test_multiple_found_id_lines_fail(tmp_path: Path) -> None:
+    """실제 발견ID 줄 + 부록 펜스 예시 발견ID = 2개 → FORM-05."""
+    text = _checkup_report() + "\n부록:\n```\n발견ID: DUP-01\n```\n"
+    result = _write_and_run(tmp_path, text)
+    assert result.returncode == 1
+    assert "FORM-05" in result.stdout
+
+
+def test_github_token_variable_length_caught(tmp_path: Path) -> None:
+    """36자가 아닌 GitHub 토큰(40자)도 비밀키 노출로 잡는다."""
+    leaky = (
+        "### 🔴 심각 1 [SEC-01] — 토큰\n"
+        "- **무슨 뜻인가요?** 토큰: ghp_" + "a" * 40 + "\n"
+        "- **어디?** `c.py`\n- **고치면?** 옮깁니다.\n"
+        "- **승인 명령:** \"심각 1 실행해줘\"\n"
+    )
+    result = _write_and_run(
+        tmp_path, _checkup_report(finding_block=leaky, found_line="발견ID: SEC-01"))
+    assert result.returncode == 1
+    assert "FORM-11" in result.stdout
+
+
+def test_google_api_key_caught(tmp_path: Path) -> None:
+    """Google API 키(AIza...)도 비밀키 노출로 잡는다."""
+    leaky = (
+        "### 🔴 심각 1 [SEC-01] — 키\n"
+        "- **무슨 뜻인가요?** 키: AIza" + "B" * 35 + "\n"
+        "- **어디?** `c.py`\n- **고치면?** 옮깁니다.\n"
+        "- **승인 명령:** \"심각 1 실행해줘\"\n"
+    )
+    result = _write_and_run(
+        tmp_path, _checkup_report(finding_block=leaky, found_line="발견ID: SEC-01"))
+    assert result.returncode == 1
+    assert "FORM-11" in result.stdout
+
+
+def test_missing_body_section_fails(tmp_path: Path) -> None:
+    """부위별 소견 절을 제거하면 FORM-08."""
+    text = _checkup_report().replace(
+        "## 부위별 소견\n\n"
+        "| 부위 | 판정 | 소견 |\n|------|------|------|\n"
+        "| 구조 | 🟡 주의 (C) | 중복이 있어요 |\n\n", "")
+    result = _write_and_run(tmp_path, text)
+    assert result.returncode == 1
+    assert "FORM-08" in result.stdout
+
+
+def test_missing_title_fails(tmp_path: Path) -> None:
+    """표지 제목 헤딩이 모드 제목이 아니면 FORM-01."""
+    text = _checkup_report().replace(
+        "# 🏥 프로젝트 건강검진 결과지 — 테스트\n\n", "# 무언가\n\n")
+    result = _write_and_run(tmp_path, text)
+    assert result.returncode == 1
+    assert "FORM-01" in result.stdout
+
+
+def test_findings_present_but_id_none_fails(tmp_path: Path) -> None:
+    """본문에 발견 항목이 있는데 발견ID:(없음)이면 모순 → FORM-09."""
+    result = _write_and_run(
+        tmp_path, _checkup_report(found_line="발견ID: (없음)",
+                                  homework_line="숙제: (없음)"))
+    assert result.returncode == 1
+    assert "FORM-09" in result.stdout
+
+
+def test_non_utf8_report_no_traceback(tmp_path: Path) -> None:
+    """cp949(비UTF-8, 한국어 Windows 기본)로 저장된 보고서도 트레이스백 없이 처리한다."""
+    report = tmp_path / "report.md"
+    report.write_bytes("# 프로젝트 건강검진 결과지\n환자: 테스트\n발견ID: (없음)\n".encode("cp949"))
+    result = _run(report)
+    assert "Traceback" not in (result.stdout + result.stderr)
+    assert result.returncode in (0, 1)  # 미달일 수 있으나 크래시는 아님
