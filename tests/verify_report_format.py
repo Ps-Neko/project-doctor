@@ -112,14 +112,9 @@ def collect_found_id_lines(lines: list[str]) -> list[str]:
     기계 판독 줄은 펜스 없는 raw line이다. 채점기(compare_report.parse_report_ids)도
     펜스 안을 무시하므로 — 두 검사기의 계약을 일치시킨다(펜스 안 발견ID를 실제 블록으로
     오인하면 verify는 통과시키는데 compare는 0% 처리하는 모순이 생긴다)."""
-    out, in_fence = [], False
-    for line in lines:
+    out: list[str] = []
+    for line in outside_fence(lines):
         stripped = line.strip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
         if stripped.startswith("발견ID:"):
             out.append(stripped)
     return out
@@ -130,14 +125,9 @@ def find_last_content_line(lines: list[str]) -> str:
 
     발견ID 블록이 보고서 맨 마지막 줄인지 검사하는 데 쓰인다. 펜스 안 예시 줄은
     실제 내용이 아니므로 마지막 줄 판정에서 제외한다(collect_found_id_lines와 동일 계약)."""
-    last, in_fence = "", False
-    for line in lines:
+    last = ""
+    for line in outside_fence(lines):
         stripped = line.strip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
         if stripped:
             last = stripped
     return last
