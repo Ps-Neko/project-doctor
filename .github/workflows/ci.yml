@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [main]
 
+# 최소권한: 이 워크플로는 코드를 체크아웃해 테스트만 돌리고 토큰으로 쓰기·코멘트를 하지 않는다.
+# 기본 GITHUB_TOKEN 권한을 읽기 전용으로 좁혀 다른 액션 침해 시 영향 범위를 줄인다.
+permissions:
+  contents: read
+
 jobs:
   test:
     strategy:
