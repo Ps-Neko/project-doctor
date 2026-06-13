@@ -303,3 +303,63 @@ def test_non_utf8_report_no_traceback(tmp_path: Path) -> None:
     result = _run(report)
     assert "Traceback" not in (result.stdout + result.stderr)
     assert result.returncode in (0, 1)  # 미달일 수 있으나 크래시는 아님
+
+
+# --- FORM-12: 사람용 본문/부록 ↔ 기계 발견ID 블록 양방향 ID 일치 (9절 line 164 계약) ---
+
+def test_machine_id_not_in_body_fails(tmp_path: Path) -> None:
+    """발견ID 줄에 있으나 본문·부록 어디에도 발견 항목이 없는 ID는 FORM-12 (9절 — 모든 발견 ID 빠짐없이).
+
+    발견ID: DUP-01, DUP-02 인데 본문에는 [DUP-01] 항목만 있으면, DUP-02는 사람이 읽을
+    근거가 어디에도 없는데 채점기(compare_report)는 '찾았다'고 집계하게 되는 불일치다."""
+    result = _write_and_run(
+        tmp_path, _checkup_report(found_line="발견ID: DUP-01, DUP-02"))
+    assert result.returncode == 1
+    assert "FORM-12" in result.stdout
+    assert "DUP-02" in result.stdout
+
+
+def test_body_id_not_in_machine_fails(tmp_path: Path) -> None:
+    """본문 발견 항목 제목에 있으나 발견ID 줄에서 누락된 ID는 FORM-12.
+
+    본문에 [DUP-01]·[DOC-01] 두 항목이 있는데 발견ID 줄이 DUP-01만 담으면, 채점기는
+    DOC-01을 '안 찾음'으로 처리해 탐지율이 실제보다 낮게 나온다."""
+    two = (
+        "### 🔴 심각 1 [DUP-01] — 중복\n"
+        "- **무슨 뜻인가요?** 설명.\n"
+        "- **어디?** `a.py`\n"
+        "- **고치면?** 좋아집니다.\n"
+        "- **승인 명령:** \"심각 1 실행해줘\"\n"
+        "### 🔴 심각 2 [DOC-01] — 문서 없음\n"
+        "- **무슨 뜻인가요?** 설명.\n"
+        "- **어디?** 프로젝트 루트\n"
+        "- **고치면?** 좋아집니다.\n"
+        "- **승인 명령:** \"심각 2 실행해줘\"\n"
+    )
+    result = _write_and_run(
+        tmp_path, _checkup_report(finding_block=two, found_line="발견ID: DUP-01"))
+    assert result.returncode == 1
+    assert "FORM-12" in result.stdout
+    assert "DOC-01" in result.stdout
+
+
+def test_appendix_id_satisfies_machine_block(tmp_path: Path) -> None:
+    """부록(## 부록...)에 한 줄로 나열된 발견 ID도 발견ID 줄과 정합하면 FORM-12를 내지 않는다.
+
+    압도 방지(7절): 발견 10건 초과 시 본문엔 일부만 ### 항목으로 싣고 나머지는 부록에
+    'ID·제목 한 줄'로 나열한다. 발견ID 줄은 본문·부록 구분 없이 전부 담으므로(9절),
+    부록에만 있는 ID도 본문 집합의 일부로 인정돼야 한다 — 거짓양성 방어."""
+    block = (
+        "### 🔴 심각 1 [DUP-01] — 중복\n"
+        "- **무슨 뜻인가요?** 설명.\n"
+        "- **어디?** `a.py`\n"
+        "- **고치면?** 좋아집니다.\n"
+        "- **승인 명령:** \"심각 1 실행해줘\"\n"
+        "\n## 부록: 나머지 발견 항목\n"
+        "- ⚪ [BIG-02] 거대 함수 — `main.py`의 process_orders 약 70줄\n"
+    )
+    result = _write_and_run(
+        tmp_path,
+        _checkup_report(finding_block=block, found_line="발견ID: DUP-01, BIG-02"))
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "FORM-12" not in result.stdout
