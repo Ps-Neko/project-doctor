@@ -172,11 +172,38 @@ def test_zero_findings_skips_four_fields(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_fenced_id_block_passes(tmp_path: Path) -> None:
-    """발견ID 블록을 코드 펜스로 감싼 표기(템플릿 9절 예시 그대로)도 통과."""
+def test_fenced_only_found_id_is_not_a_machine_line(tmp_path: Path) -> None:
+    """발견ID를 코드펜스로만 감싸면(raw 줄 없음) 실제 기계 판독 줄로 인정되지 않아 FORM-05.
+
+    이전에는 fenced 발견ID를 통과시켰으나, 채점기(compare_report)는 펜스 안을 무시해
+    같은 보고서를 0% 처리하던 계약 불일치가 있었다. 실제 산출 보고서는 raw line이므로
+    verify도 raw-only로 통일한다(P1-A)."""
     result = _write_and_run(
         tmp_path, _checkup_report(found_line="```\n발견ID: DUP-01\n```"))
-    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.returncode == 1
+    assert "FORM-05" in result.stdout
+
+
+def test_finding_title_without_catalog_id_fails(tmp_path: Path) -> None:
+    """발견 항목 제목에 카탈로그 [ID]가 없으면 미달 (5절 계약 — 재검진·승인 명령 추적의 토대)."""
+    block = (
+        "### 🔴 심각 1 — 같은 코드가 3곳에 복사됨\n"
+        "- **무슨 뜻인가요?** 한 곳을 고치면 나머지도 따로 고쳐야 합니다.\n"
+        "- **어디?** `a.py`, `b.py`\n"
+        "- **고치면?** 한 곳만 고치면 전체에 반영됩니다.\n"
+        "- **승인 명령:** \"심각 1 실행해줘\"\n"
+    )
+    result = _write_and_run(tmp_path, _checkup_report(finding_block=block))
+    assert result.returncode == 1
+    assert "FORM-09" in result.stdout
+
+
+def test_fenced_homework_does_not_satisfy_contract(tmp_path: Path) -> None:
+    """코드펜스 안 예시 숙제 줄은 실제 숙제 줄을 대신하지 못한다 (FORM-10, P2-B)."""
+    result = _write_and_run(
+        tmp_path, _checkup_report(homework_line="```\n숙제: DUP-01\n```"))
+    assert result.returncode == 1
+    assert "FORM-10" in result.stdout
 
 
 def test_v1_report_without_homework_passes(tmp_path: Path) -> None:

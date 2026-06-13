@@ -51,6 +51,13 @@ def check_file(md: Path) -> list[str]:
         if not path_part:
             continue
         resolved = (md.parent / path_part).resolve()
+        # 저장소 밖으로 나가는 상대 링크(../)는 러너 환경에 우연히 파일이 있어도 실패로 본다 —
+        # 문서 링크는 저장소 안을 가리켜야 한다(다른 환경에서 깨지거나 의도치 않은 외부 참조).
+        try:
+            resolved.relative_to(ROOT)
+        except ValueError:
+            broken.append(f"{md.relative_to(ROOT)} -> {target} (저장소 밖 링크)")
+            continue
         if not resolved.exists():
             broken.append(f"{md.relative_to(ROOT)} -> {target}")
     return broken

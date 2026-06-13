@@ -44,3 +44,6 @@ jobs:
 
       - name: 문서 링크 검사
         run: python tests/check_links.py
+
+      - name: golden 보고서 E2E (실보고서가 verify+compare 동시 통과하는지)
+        run: python tests/run_checks.py tests/golden/checkup-report.md tests/fixtures/messy-project/EXPECTED.md

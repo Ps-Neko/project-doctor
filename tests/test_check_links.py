@@ -63,3 +63,20 @@ def test_fenced_broken_link_ignored(tmp_path) -> None:
     finally:
         check_links.ROOT = original_root
     assert broken == []  # 펜스 안 예시 링크는 검사 제외
+
+
+def test_link_outside_repo_fails(tmp_path) -> None:
+    """저장소 밖으로 나가는 상대 링크(../)는 실제 파일이 있어도 실패로 본다 (P3-B)."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (tmp_path / "outside.md").write_text("real", encoding="utf-8")  # 저장소 밖 실재 파일
+    md = repo / "doc.md"
+    md.write_text("[밖으로](../outside.md)\n", encoding="utf-8")
+    original_root = check_links.ROOT
+    try:
+        check_links.ROOT = repo
+        broken = check_links.check_file(md)
+    finally:
+        check_links.ROOT = original_root
+    assert len(broken) == 1
+    assert "저장소 밖" in broken[0]
