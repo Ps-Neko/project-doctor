@@ -3,8 +3,9 @@
 용도: 신선한 검진 드라이런으로 보고서를 만든 뒤, 이 한 줄로 두 게이트를 함께 통과하는지 확인한다.
   python tests/run_checks.py <보고서.md> <EXPECTED.md>
 
-내부적으로 compare_report.py(탐지율+오탐 게이트)와 verify_report_format.py(형식 계약)를
-순서대로 실행하고, 둘 다 통과해야 종료 코드 0을 반환한다. 정답지 인자를 생략하면 형식 검사만 수행한다.
+내부적으로 verify_report_format.py(형식 계약)·compare_report.py(탐지율+오탐 게이트)·
+check_location_sampling.py(BL-22 위치 샘플링)를 순서대로 실행하고, 모두 통과해야 종료 코드 0을
+반환한다. 정답지 인자를 생략하면 형식 검사만 수행한다(채점·위치는 정답지가 있어야 한다).
 
 검진(Claude 실행) 자체는 자동화 범위 밖이다 — 이 러너는 '산출물'을 검사한다 (BACKLOG BL-16).
 """
@@ -41,9 +42,10 @@ def main(argv: list[str]) -> int:
         return 1
 
     results: list[tuple[str, int]] = []
+    total = 3 if len(argv) == 3 else 1
 
     print("=" * 56)
-    print("[1/2] 형식 검증 (verify_report_format.py)")
+    print(f"[1/{total}] 형식 검증 (verify_report_format.py)")
     print("-" * 56)
     code, out = run("verify_report_format.py", [report])
     print(out)
@@ -52,13 +54,21 @@ def main(argv: list[str]) -> int:
     if len(argv) == 3:
         print()
         print("=" * 56)
-        print("[2/2] 탐지율·오탐 채점 (compare_report.py)")
+        print(f"[2/{total}] 탐지율·오탐 채점 (compare_report.py)")
         print("-" * 56)
         code, out = run("compare_report.py", [report, argv[2]])
         print(out)
         results.append(("채점", code))
+
+        print()
+        print("=" * 56)
+        print(f"[3/{total}] 위치 샘플링 게이트 (check_location_sampling.py · BL-22)")
+        print("-" * 56)
+        code, out = run("check_location_sampling.py", [report, argv[2]])
+        print(out)
+        results.append(("위치 샘플링", code))
     else:
-        print("\n(정답지 미지정 — 채점 생략, 형식 검사만 수행)")
+        print("\n(정답지 미지정 — 채점·위치 생략, 형식 검사만 수행)")
 
     print()
     print("=" * 56)
