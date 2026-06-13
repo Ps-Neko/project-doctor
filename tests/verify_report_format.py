@@ -39,6 +39,8 @@ GRADE_TABLE: dict[str, tuple[str, str]] = {
 }
 GRADE_LINE_RE = re.compile(r"^#\s*(🟢|🟡|🔴)\s*([ABCD])\s*—\s*(.+?)\s*$")
 FINDING_HEAD_RE = re.compile(r"^###\s+(🔴|🟡|⚪)")
+# 발견 항목 제목에 든 카탈로그 ID (예: `[DUP-01]`) — report-template 5절은 제목에 ID 필수.
+TITLE_ID_RE = re.compile(r"\[[A-Z]+-\d{2,}\]")
 
 # 4요소 라벨 (5절 — 발견 항목마다 4줄)
 FOUR_FIELDS: tuple[str, ...] = ("무슨 뜻인가요?", "어디?", "고치면?", "승인 명령:")
@@ -104,26 +106,28 @@ def detect_mode(lines: list[str]) -> str | None:
 
 
 def collect_found_id_lines(lines: list[str]) -> list[str]:
-    """'발견ID:'로 시작하는 줄을 모은다 (펜스 ``` 표기 줄만 건너뜀, 펜스 안 내용은 포함)."""
-    out, in_fence = [], False
-    for line in lines:
+    """'발견ID:'로 시작하는 줄을 모은다 (**코드펜스 밖만** — 실제 기계 판독 줄은 raw 한 줄).
+
+    템플릿 9절은 발견ID 블록 예시를 펜스로 감싸 보여주지만, 실제 산출 보고서의
+    기계 판독 줄은 펜스 없는 raw line이다. 채점기(compare_report.parse_report_ids)도
+    펜스 안을 무시하므로 — 두 검사기의 계약을 일치시킨다(펜스 안 발견ID를 실제 블록으로
+    오인하면 verify는 통과시키는데 compare는 0% 처리하는 모순이 생긴다)."""
+    out: list[str] = []
+    for line in outside_fence(lines):
         stripped = line.strip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            continue
         if stripped.startswith("발견ID:"):
             out.append(stripped)
     return out
 
 
 def find_last_content_line(lines: list[str]) -> str:
-    """마지막 내용 줄을 찾는다 (펜스 ``` 표기 줄만 건너뜀; 9절 예시가 발견ID를 펜스로 감쌈)."""
-    last, in_fence = "", False
-    for line in lines:
+    """마지막 내용 줄을 찾는다 (**코드펜스 밖만** — raw 기계 판독 줄 계약).
+
+    발견ID 블록이 보고서 맨 마지막 줄인지 검사하는 데 쓰인다. 펜스 안 예시 줄은
+    실제 내용이 아니므로 마지막 줄 판정에서 제외한다(collect_found_id_lines와 동일 계약)."""
+    last = ""
+    for line in outside_fence(lines):
         stripped = line.strip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            continue
         if stripped:
             last = stripped
     return last
@@ -206,11 +210,13 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
                       violations: list[str]) -> None:
     content = outside_fence(lines)
     finding_blocks: list[list[str]] = []
+    finding_titles: list[str] = []
     current: list[str] | None = None
     for line in content:
         if FINDING_HEAD_RE.match(line.strip()):
             current = []
             finding_blocks.append(current)
+            finding_titles.append(line.strip())
         elif current is not None:
             current.append(line)
 
@@ -227,8 +233,13 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
         violations.append(
             "FORM-09 발견이 있는데 본문에 발견 항목(### 🔴/🟡/⚪ ...)이 없습니다")
         return
-    # 발견 항목마다 4요소가 그 블록 안에 있는지 항목별로 검사 (전체 개수 합산이 아니라).
-    for idx, block in enumerate(finding_blocks, 1):
+    # 발견 항목마다 ① 제목에 카탈로그 ID([DUP-01] 형식) ② 4요소 라벨이 그 블록 안에 있는지
+    # 항목별로 검사 (전체 개수 합산이 아니라). 제목 ID는 재검진 비교·승인 명령 추적의 토대다.
+    for idx, (title, block) in enumerate(zip(finding_titles, finding_blocks), 1):
+        if not TITLE_ID_RE.search(title):
+            violations.append(
+                f"FORM-09 발견 {idx}번 항목 제목에 카탈로그 ID([DUP-01] 형식)가 없습니다: "
+                f"{title[:40]}")
         btext = "\n".join(block)
         missing = [f for f in FOUR_FIELDS if f not in btext]
         if missing:
@@ -237,8 +248,14 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
 
 
 def check_homework(lines: list[str], violations: list[str]) -> None:
-    if not any(ln.strip().startswith("숙제:") for ln in lines):
+    # 코드펜스 밖만 — 템플릿 예시(펜스 안 `숙제: HARD-01`)가 실제 숙제 줄을 대신하지 못하게 한다.
+    content = outside_fence(lines)
+    homework = [ln for ln in content if ln.strip().startswith("숙제:")]
+    if not homework:
         violations.append("FORM-10 '숙제:' 줄이 없습니다 (8절 기계 판독 계약)")
+    elif len(homework) > 1:
+        violations.append(
+            f"FORM-10 '숙제:' 줄이 여러 개입니다({len(homework)}개) — 8절 계약상 하나만 두세요")
 
 
 def check_secrets(lines: list[str], violations: list[str]) -> None:

@@ -61,10 +61,20 @@ def parse_report_ids(lines: list[str]) -> list[str]:
 
 
 def parse_revisit_lines(lines: list[str]) -> dict[str, str]:
-    """v2 재방문 기계 판독 줄('비교:', '숙제:')을 추출한다 (없으면 빈 dict)."""
+    """v2 재방문 기계 판독 줄('비교:', '숙제:')을 추출한다 (없으면 빈 dict).
+
+    코드펜스 안의 줄은 무시한다 — parse_report_ids와 동일 계약(템플릿 예시
+    `숙제: HARD-01` 등이 실제 참고 출력으로 오인되지 않게)."""
+    clean, in_fence = [], False
+    for line in lines:
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            clean.append(line)
     extras: dict[str, str] = {}
     for prefix, key in (("비교:", "comparison"), ("숙제:", "homework")):
-        found = [ln.strip() for ln in lines if ln.strip().startswith(prefix)]
+        found = [ln.strip() for ln in clean if ln.strip().startswith(prefix)]
         if found:
             extras[key] = found[-1].split(":", 1)[1].strip()
     return extras
