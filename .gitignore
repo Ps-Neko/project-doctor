@@ -9,3 +9,6 @@ __pycache__/
 
 # 회사 MIP가 CSV를 자동 암호화해 남기는 파일 — 추적 제외 (BACKLOG BL-13)
 *.pfile
+
+# 풀무 작업공간 (감사 추적용 로컬 보존)
+/_workspace/
