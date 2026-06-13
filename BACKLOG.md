@@ -94,4 +94,4 @@ GPT가 공개판만 보고 제안한 22건 중 16건은 이미 구현(다수 초
 
 ## F. 운영 교훈
 
-- **[BL-19] gmail author 재유입 (해결책 정착 필요)** — GitHub 웹/API squash 머지는 PR 커밋 author를 **계정 기본 이메일(현재 gmail, 공개 상태)**로 다시 박는다. 2026-06-12 ①번 회수 후에도 PR#7 머지에서 재발 → filter-branch 재작성으로 또 회수. **근본 차단 2안**: ⓐ `gh auth refresh -h github.com -s user` 후 `gh api -X PATCH /user/email/visibility -f visibility=private` (계정 이메일 비공개) ⓑ 또는 앞으로 머지를 GitHub UI/API 대신 **로컬에서 수행**(noreply author로 커밋 후 push)하고 PR은 기록용으로만. 둘 중 하나 정착 전까지 머지마다 author 확인 필수.
+- **[BL-19] gmail author 재유입** — **→ 근본 차단 완료 (2026-06-13)**. GitHub 웹/API squash 머지는 PR 커밋 author를 계정 기본 이메일(gmail, 공개)로 다시 박았다(2026-06-12 PR#7, 2026-06-13 PR#2 재발). **ⓐ 정착**: 사용자가 GitHub 계정 이메일을 **비공개로 전환** — `gh api user --jq .email` = null 확인. 이제 web/API 머지도 noreply(`...@users.noreply.github.com`)로 박힌다. **ⓑ 병행**: dev 머지를 로컬 noreply 커밋+push로 수행하는 관행. **과거 노출분 회수**: 2026-06-13 main 전체 36커밋의 gmail author 1건(#2 머지)+committer 13건(과거 `dora`)을 filter-branch+`--force-with-lease`로 noreply 치환(tree 무결성·CI green 확인, main 해시 재작성 HEAD=`d4f703f`). 옛 커밋 해시 전부 무효 — 타 클론은 `reset --hard origin/main` 필요. (이 항목 종료)
