@@ -15,9 +15,11 @@ compare_report.py가 "무엇을 찾았는가"(탐지율·오탐)를 채점한다
 """
 import re
 import sys
-from pathlib import Path
 
-EMPTY_MARK: str = "(없음)"
+# 펜스 처리·파일 읽기·빈 표식은 compare_report를 단일 출처로 공유한다 — 두 검사기의 펜스 계약이
+# 갈라지면 verify는 통과시키는데 compare는 0% 처리하는 모순이 생기므로(계약을 한 곳에서만 정의).
+from compare_report import EMPTY_MARK, outside_fence, read_lines
+
 ID_RE = re.compile(r"^[A-Z]+-\d{2,}$")
 VERSION_RE = re.compile(r"v(\d+)\.\d+\.\d+")
 
@@ -59,27 +61,6 @@ SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("Slack 토큰", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
     ("API 시크릿 키", re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b")),
 )
-
-
-def read_lines(path: str) -> list[str]:
-    # utf-8-sig: BOM 흡수. errors=replace: cp949(ANSI) 보고서도 트레이스백 없이 읽는다.
-    return Path(path).read_text(encoding="utf-8-sig", errors="replace").splitlines()
-
-
-def outside_fence(lines: list[str]) -> list[str]:
-    """코드펜스(```) 밖의 줄만 (원본 그대로) 돌려준다.
-
-    등급·절·4요소 검사는 템플릿 예시 인용(펜스 안)을 검사 대상에서 빼야,
-    펜스 안 올바른 예시가 펜스 밖 실제 위반을 가리는 우회를 막을 수 있다.
-    """
-    result, in_fence = [], False
-    for line in lines:
-        if line.strip().startswith("```"):
-            in_fence = not in_fence
-            continue
-        if not in_fence:
-            result.append(line)
-    return result
 
 
 def detect_major_version(lines: list[str]) -> int | None:

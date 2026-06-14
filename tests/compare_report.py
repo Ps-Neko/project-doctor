@@ -167,12 +167,16 @@ def main(argv: list[str]) -> int:
         print("오류: 정답지의 '## 심은 문제' 표에서 ID를 찾지 못했습니다 "
               "(헤더 'ID' 열·표 형식을 확인하세요).")
         return 1
-    missed = [i for i in expected_ids if i not in set(report_ids)]
+    # 불변 집합은 컴프리헨션 밖에서 한 번만 만든다 (루프마다 set() 재생성하면 O(n²)).
+    report_set = set(report_ids)
+    expected_set = set(expected_ids)
+    neutral_set = set(neutral_ids)
+    allowed_set = expected_set | neutral_set
+    missed = [i for i in expected_ids if i not in report_set]
     unique_report = list(dict.fromkeys(report_ids))
     neutral_hits = [i for i in unique_report
-                    if i in set(neutral_ids) and i not in set(expected_ids)]
-    false_positives = [i for i in unique_report
-                       if i not in set(expected_ids) | set(neutral_ids)]
+                    if i in neutral_set and i not in expected_set]
+    false_positives = [i for i in unique_report if i not in allowed_set]
     n_found = len(expected_ids) - len(missed)
     rate = n_found / len(expected_ids) * 100
     passed = rate >= PASS_THRESHOLD and not false_positives
