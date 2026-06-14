@@ -1,5 +1,9 @@
 # 변경 이력 (CHANGELOG)
 
+## v2.7.10 — 2026-06-14 (수동 설치 업데이트 stale 파일 안내 — 외부 평가 7차 재평가)
+- **[Docs] 스킬 README 수동 설치(`<details>`)에 '업데이트 시 기존 폴더 먼저 삭제' 안내 추가**: 수동 복사(`Copy-Item .\*`/`cp -r .`)는 병합이라 옛 파일이 삭제/개명돼도 `~/.claude/skills/project-doctor`에 stale로 남는다. 루트 README의 `<details>`엔 이미 있던 경고를, P0(v2.7.9)로 동작하게 고친 스킬 README의 수동 fallback에도 정합. 자동 스크립트(install.ps1/sh)는 clean install이라 무관 — 수동 fallback만의 잔여 리스크 해소(7차 평가 재평가 잔여 지적).
+- 문서만 변경. 검사기·진단 카탈로그·채점기·픽스처·정답지 무변경 → 탐지율 불변.
+
 ## v2.7.9 — 2026-06-14 (HTML url() 하드닝·버전 게이트 강화·설치 명령 교정 — 외부 평가 7차)
 - **[Security] HTML 검사기 CSS `url()` 전면금지** (verify_html_report.py): 스킴 한정 정규식(`https`/`ftp(s)`/`//`)이 `url(file:·data:·blob:·behavior:)`를 놓치던 갭(7차 평가 P1a, 실측 미검출)을, §2 골격이 `url()`을 0건 쓴다는 사실에 기대 `url(` 자체를 위반으로 보는 fail-closed로 교체(`CSS_URL_RE`). 인라인 `style=`·`<style>` 양 경로 동시 적용. 골든 false-fail 0·회귀 테스트 +4(file/data/blob/inline). HTML 출력 검사기 하드닝일 뿐 진단 카탈로그·채점 무변경.
 - **[CI] 버전 줄 통째 삭제도 실패** (check_version.py): main()이 마커 부재(MISSING)를 '건너뜀'으로만 처리해, 핵심문서(루트 README·스킬 README·CHANGELOG)에서 `현재 버전:`/`## v` 줄을 통째로 지우면 CI가 통과하던 false-pass(7차 평가 P2a, 실측 재현)를 차단 — 불일치·BROKEN과 마찬가지로 MISSING도 실패로 집계. find_version은 불변(단위 6테스트 유지), main() 회귀 테스트 +2.

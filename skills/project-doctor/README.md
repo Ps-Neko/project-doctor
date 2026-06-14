@@ -3,7 +3,7 @@
 내 프로젝트가 마음에 안 들거나, 방향을 바꾸고 싶거나, 남에게 넘겨야 할 때 —
 프로젝트를 진단하고, **승인한 개선만** 안전하게 실행해 주는 Claude Code 스킬입니다.
 
-> **현재 버전: v2.7.9 "HTML 결과지 보안 검증기"** — 전 모드 동작 + 단골 기능(등급 추이 · 치료 부위 경과 · 이번 주 처방 · 검진 주기 안내) + 처방 실행 전 전/후 변경 내용 미리보기 + 쓰기 경계 자동 검사 + 보고서를 마크다운/HTML(클리니컬 결과지 디자인)/PDF(내장 브라우저 자동 변환)/워드(변환 도구 있을 때)로 받기 + **HTML 결과지 보안 검증기**(허용목록 기반 태그·외부 리소스·비밀키 노출 기계 검사). 변경 이력: [CHANGELOG.md](./CHANGELOG.md)
+> **현재 버전: v2.7.10 "HTML 결과지 보안 검증기"** — 전 모드 동작 + 단골 기능(등급 추이 · 치료 부위 경과 · 이번 주 처방 · 검진 주기 안내) + 처방 실행 전 전/후 변경 내용 미리보기 + 쓰기 경계 자동 검사 + 보고서를 마크다운/HTML(클리니컬 결과지 디자인)/PDF(내장 브라우저 자동 변환)/워드(변환 도구 있을 때)로 받기 + **HTML 결과지 보안 검증기**(허용목록 기반 태그·외부 리소스·비밀키 노출 기계 검사). 변경 이력: [CHANGELOG.md](./CHANGELOG.md)
 
 ## ⚠️ 사용 전 꼭 알아두세요 (필수 고지)
 
@@ -31,6 +31,8 @@ New-Item -ItemType Directory -Force ~/.claude/skills/project-doctor
 Copy-Item -Recurse -Force .\* ~/.claude/skills/project-doctor/
 ```
 macOS / Linux: `mkdir -p ~/.claude/skills/project-doctor && cp -r . ~/.claude/skills/project-doctor/`
+
+> **업데이트(재설치)할 때**는 옛 파일이 남지 않도록 **먼저 기존 폴더를 지우세요** — Windows `Remove-Item -Recurse -Force ~/.claude/skills/project-doctor`, macOS / Linux `rm -rf ~/.claude/skills/project-doctor` (그다음 위 복사). 자동 스크립트(`install.ps1`/`install.sh`)는 이 과정을 알아서 합니다.
 </details>
 
 복사·설치 후 **Claude Code를 새로 시작**해야 `/project-doctor`가 인식됩니다. (재설치·업데이트도 같은 명령을 그대로 다시 실행 — 여러 번 실행해도 안전합니다.)
