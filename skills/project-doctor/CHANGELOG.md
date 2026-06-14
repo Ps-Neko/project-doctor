@@ -1,5 +1,9 @@
 # 변경 이력 (CHANGELOG)
 
+## v1.7.4 — 2026-06-14 (수동 설치 업데이트 stale 파일 안내 — 외부 평가 7차 재평가)
+- **[Docs] 수동 설치 안내에 '업데이트 시 기존 폴더 먼저 삭제' 추가** (루트 README·스킬 README): 기존 안내가 "여러 번 실행해도 안전"이라 적혀 있었으나, 수동 복사(`Copy-Item skills/project-doctor`)는 병합이라 삭제·개명된 옛 파일이 `~/.claude/skills/project-doctor`에 stale로 남는다. 업데이트 시 먼저 폴더를 지우라는 안내(`Remove-Item -Recurse -Force`/`rm -rf`)로 정정. dev v2.7.10과 동일 취지(dev는 스킬 README `<details>`, 공개판은 양쪽 README가 같은 오해 소지였어 둘 다 수정).
+- 문서만 변경. 검사기·진단 카탈로그·채점기·픽스처·정답지 무변경 → 탐지율 불변.
+
 ## v1.7.3 — 2026-06-14 (CI 게이트 하드닝 — 외부 평가 7차 中 공개판 적용분)
 - **[CI] 버전 줄 통째 삭제도 실패** (check_version.py): main()이 마커 부재(MISSING)를 '건너뜀'으로만 처리해, 핵심문서(루트 README·스킬 README·CHANGELOG)에서 `현재 버전:`/`## v` 줄을 통째로 지우면 CI가 통과하던 false-pass를 차단 — 불일치·BROKEN과 마찬가지로 MISSING도 실패로 집계. find_version은 불변. main() 회귀 테스트 +2(`test_check_version.py` 신설).
 - **[CI] `timeout-minutes: 10`** (ci.yml): 무한 루프 시 러너 6시간 점유 방어.
