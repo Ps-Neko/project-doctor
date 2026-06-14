@@ -1,5 +1,10 @@
 # 변경 이력 (CHANGELOG)
 
+## v1.7.3 — 2026-06-14 (CI 게이트 하드닝 — 외부 평가 7차 中 공개판 적용분)
+- **[CI] 버전 줄 통째 삭제도 실패** (check_version.py): main()이 마커 부재(MISSING)를 '건너뜀'으로만 처리해, 핵심문서(루트 README·스킬 README·CHANGELOG)에서 `현재 버전:`/`## v` 줄을 통째로 지우면 CI가 통과하던 false-pass를 차단 — 불일치·BROKEN과 마찬가지로 MISSING도 실패로 집계. find_version은 불변. main() 회귀 테스트 +2(`test_check_version.py` 신설).
+- **[CI] `timeout-minutes: 10`** (ci.yml): 무한 루프 시 러너 6시간 점유 방어.
+- dev v2.7.9(외부 평가 7차)에서 공개판에 적용 가능한 CI 하드닝 2건을 미러. 진단 카탈로그·채점기·픽스처·정답지·검사기 무변경 → 탐지율 불변. (dev의 HTML `url()` 검증기 하드닝은 공개판에 HTML 검증기 미탑재로 제외, 설치 명령 교정은 공개판 설치 안내가 레포 루트 기준이라 해당 없음.)
+
 ## v1.7.2 — 2026-06-13 (검사기 계약 통일·보안 문서 정합 — 외부 코드 리뷰)
 - **[P1] 검사기 간 발견ID 계약 통일**: verify_report_format이 코드펜스 안 `발견ID:`를 실제 블록으로 오인(통과)하던 것을 raw-line만 인정하도록 수정 — compare_report(펜스 무시)와 일치. 같은 보고서가 "형식 통과·채점 0%"로 갈리던 모순 제거
 - **[P1] 보안 문서 충돌 해소**: release-checklist SEC-02의 "이력 스캔서 EXPECTED.md 제외"를 SKILL v1.7.1 규칙9와 정합 — 보안 스캔은 표식 있는 EXPECTED.md도 검사(채점만 제외). v1.7.1 비밀키 우회 차단이 SEC-02에서 되살아나던 구멍 봉합

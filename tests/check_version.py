@@ -6,8 +6,11 @@ SKILL.md의 버전을 단일 진실로 보고, 나머지 표기처(루트 README
 이 프로젝트는 "절차의 일관성"이 제품이고 보고서 첫머리에 스킬 버전을 인쇄하므로, 버전 드리프트를
 CI에서 실패로 잡는다. (2026-06-12 루트 README 누락 드리프트가 실제로 발생 → 이 검사로 재발 방지)
 
-마커 줄이 살아 있는데 버전 표기만 깨진 경우('현재 버전: 미정' 등)는 '표기 없음'과 구분해 실패로 처리한다 —
-그게 가장 흔하고 위험한 드리프트 패턴이기 때문이다.
+검사 대상(루트 README·스킬 README·CHANGELOG 최신 항목)은 핵심 문서이므로, 버전 표기가 (a) 다른 버전(불일치)
+이든 (b) 마커는 살아 있으나 vX.Y.Z 파싱 실패(BROKEN, 예: '현재 버전: 미정')든 (c) 마커 줄 자체가 없거나
+파일이 없음(MISSING)이든 모두 실패로 처리한다 — '버전 줄을 통째로 지우면 검사를 통과'하는 우회를 막기
+위함이다(7차 평가 P2a). find_version 은 세 경우를 구분하려고 truth/BROKEN/MISSING 을 그대로 돌려주고,
+무엇을 실패로 집계할지는 main()이 결정한다.
 """
 from __future__ import annotations
 
@@ -63,7 +66,11 @@ def main() -> int:
     for name, path, marker in checks:
         got = find_version(path, marker)
         if got is MISSING:
-            print(f"  - {name}: (표기 없음 - 건너뜀)")
+            # 핵심문서는 버전 줄을 통째로 지우거나(마커 부재) 파일이 사라진 것도 위험한 드리프트다 —
+            # '버전 줄을 지우면 CI 통과'(7차 평가 P2a)를 막기 위해 MISSING 도 실패로 집계한다.
+            # (find_version 의 MISSING 판정 자체는 바꾸지 않는다 — 실패 집계는 여기서만.)
+            print(f"  - {name}: (버전 표기 없음 - 실패: 핵심문서는 버전 표기 필수)")
+            failures.append(f"{name}=표기없음")
         elif got is BROKEN:
             print(f"  - {name}: 버전 줄은 있으나 vX.Y.Z 파싱 실패 (X)")
             failures.append(f"{name}=파싱실패")
