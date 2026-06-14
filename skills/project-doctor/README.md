@@ -11,20 +11,27 @@
 2. **비용**: 검진은 Claude 사용량(토큰)을 소모합니다. 정밀 검진(`--deep`)은 기본 검진보다 수 배 더 듭니다 — 평소엔 기본 검진을 권합니다.
 3. **검사 범위와 면책**: 이 스킬은 진단 카탈로그에 정의된 알려진 패턴만 검사합니다. 보안 취약점 분석·법적 검토는 범위 밖이며, 테스트에서의 합격 기준(예: 탐지율 100%)은 내부 품질 기준이지 성능 보증이 아닙니다. 결과에 대한 최종 판단과 책임은 사용자에게 있습니다.
 
-## 설치 (PowerShell)
+## 설치
 
-1. 이 저장소(automation-main)를 내려받아 압축을 풉니다. — **공식 저장소의 릴리스에서만 받으세요** (메신저로 돌아다니는 zip 사본은 변조 위험이 있습니다)
-2. PowerShell을 열고 `cd <받은 폴더 경로>`로 이동합니다. (예: `cd C:\Users\내이름\Downloads\automation-main`)
-3. 아래 명령을 실행합니다.
+**저장소 전체를 받았다면(권장)** — 저장소 루트에서 한 줄이면 됩니다:
 
+- Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File install.ps1`
+- macOS / Linux: `bash install.sh`
+
+설치 스크립트가 `skills/project-doctor`를 `~/.claude/skills/`로 복사하고 설치 인식(SKILL.md·버전)까지 확인합니다. 점검만 하려면 `-Check`(macOS/Linux는 `--check`). **공식 저장소의 릴리스에서만 받으세요** — 메신저로 돌아다니는 zip 사본은 변조 위험이 있습니다.
+
+<details>
+<summary>이 스킬 폴더만 받았을 때 — 수동 설치</summary>
+
+PowerShell:
 ```powershell
 New-Item -ItemType Directory -Force ~/.claude/skills
 Copy-Item -Recurse -Force skills/project-doctor ~/.claude/skills/
 ```
+macOS / Linux: `mkdir -p ~/.claude/skills && cp -r skills/project-doctor ~/.claude/skills/`
+</details>
 
-복사 후 **Claude Code를 새로 시작**해야 `/project-doctor`가 인식됩니다.
-(재설치·업데이트할 때도 같은 명령을 그대로 다시 실행하면 됩니다 — 여러 번 실행해도 안전합니다.)
-"경로를 찾을 수 없음" 오류가 나오면 2번의 폴더 위치를 다시 확인하세요.
+복사·설치 후 **Claude Code를 새로 시작**해야 `/project-doctor`가 인식됩니다. (재설치·업데이트도 같은 명령을 그대로 다시 실행 — 여러 번 실행해도 안전합니다.)
 
 ## 사용법
 
