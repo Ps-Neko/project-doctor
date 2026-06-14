@@ -131,6 +131,33 @@ def test_inline_style_bare_scheme_url(tmp_path):
     assert "HTML-03" in r.stdout
 
 
+def test_css_url_file_scheme(tmp_path):
+    # 스킴 한정 정규식이 놓치던 url(file://) — 골격은 url()을 안 쓰므로 전면금지(7차 평가 P1a).
+    r = run_html('<meta charset="utf-8"><style>body{background:url(file:///etc/passwd)}</style>', tmp_path)
+    assert r.returncode == 1
+    assert "HTML-03" in r.stdout
+
+
+def test_css_url_data_scheme(tmp_path):
+    # url(data:...) — 자기완결 골격은 인라인 이미지조차 안 쓰므로 url(이면 위반.
+    r = run_html('<meta charset="utf-8"><style>body{background:url(data:image/png;base64,iVBORw0KGgo=)}</style>', tmp_path)
+    assert r.returncode == 1
+    assert "HTML-03" in r.stdout
+
+
+def test_css_url_blob_scheme(tmp_path):
+    r = run_html('<meta charset="utf-8"><style>body{background:url(blob:https://x/y)}</style>', tmp_path)
+    assert r.returncode == 1
+    assert "HTML-03" in r.stdout
+
+
+def test_inline_style_url_file_scheme(tmp_path):
+    # 인라인 style= 경로도 같은 규칙(전면금지)으로 url(file://) 검출.
+    r = run_html('<meta charset="utf-8"><div style="background:url(file:///etc/passwd)">x</div>', tmp_path)
+    assert r.returncode == 1
+    assert "HTML-03" in r.stdout
+
+
 def test_secret_patterns_in_sync_with_md_verifier():
     # 배포본(tools/)은 tests/ 를 import 못 하므로 비밀키 패턴을 자체 보유한다(BL-25 ① 제약).
     # 두 곳이 드리프트하면 HTML 결과지의 비밀키 탐지가 .md 보다 약해지므로 동기화를 테스트로 고정.

@@ -43,9 +43,12 @@ EXTERNAL_URL_RE = re.compile(r"(?i)(?:https?:)?//|(?:https?|ftp|ftps):")
 DANGEROUS_URI_RE = re.compile(r"(?i)^\s*(?:javascript|data|vbscript):")
 # 외부 리소스를 가질 수 있는 속성.
 URL_ATTRS = frozenset({"src", "href", "background", "poster", "srcset", "data"})
-# CSS 외부 리소스.
+# CSS @import / url(). 골격(report-formats.md §2)은 url()을 전혀 쓰지 않고 외부·인라인 리소스를
+# 금지하므로, 스킴을 가리지 않고 url( 자체를 위반으로 본다(fail-closed). 스킴 한정 정규식은
+# url(file:·data:·blob:·behavior:)를 놓쳤다(7차 평가 P1a) — 전면금지가 그 갭을 닫는다.
+# 골격이 언젠가 url()을 쓰게 되면 이 규칙을 같은 작업에서 갱신할 것(docstring 골격 결합 참조).
 CSS_IMPORT_RE = re.compile(r"(?i)@import\b")
-CSS_URL_EXTERNAL_RE = re.compile(r"(?i)url\(\s*['\"]?\s*(?:(?:https?|ftps?):|//)")
+CSS_URL_RE = re.compile(r"(?i)url\(")
 # charset 메타 (대소문자·따옴표 변형 허용).
 CHARSET_RE = re.compile(r"(?i)<meta[^>]*charset\s*=\s*['\"]?\s*utf-8")
 
@@ -79,9 +82,9 @@ class _HtmlAuditor(HTMLParser):
             if n.startswith("on"):
                 self.violations.append(
                     f"HTML-02 이벤트 핸들러 속성 {n}= (<{t}>) — 스크립트 실행 벡터입니다")
-            if n == "style" and (CSS_IMPORT_RE.search(v) or CSS_URL_EXTERNAL_RE.search(v)):
+            if n == "style" and (CSS_IMPORT_RE.search(v) or CSS_URL_RE.search(v)):
                 self.violations.append(
-                    f"HTML-03 인라인 style 외부 리소스 (<{t}>) — 자기완결 의무 위반")
+                    f"HTML-03 인라인 style 의 @import/url() (<{t}>) — 자기완결 의무 위반(리소스 로드 금지)")
             if t == "meta" and n == "http-equiv" and v.strip().lower() == "refresh":
                 self.violations.append(
                     "HTML-03 메타 새로고침 외부 이동 (<meta http-equiv=refresh>) — 자기완결 의무 위반")
@@ -118,8 +121,8 @@ def verify(html_text: str) -> list[str]:
     css = "\n".join(auditor.style_text)
     if CSS_IMPORT_RE.search(css):
         violations.append("HTML-03 CSS @import — 외부 스타일 가져오기 금지 (자기완결 의무)")
-    if CSS_URL_EXTERNAL_RE.search(css):
-        violations.append("HTML-03 CSS url(...) 외부 리소스 — 자기완결 의무 위반")
+    if CSS_URL_RE.search(css):
+        violations.append("HTML-03 CSS url(...) — 골격 밖 리소스 로드 금지 (자기완결 의무)")
 
     if not CHARSET_RE.search(html_text):
         violations.append('HTML-05 <meta charset="utf-8"> 가 없습니다 (인코딩 계약)')

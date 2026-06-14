@@ -1,5 +1,12 @@
 # 변경 이력 (CHANGELOG)
 
+## v2.7.9 — 2026-06-14 (HTML url() 하드닝·버전 게이트 강화·설치 명령 교정 — 외부 평가 7차)
+- **[Security] HTML 검사기 CSS `url()` 전면금지** (verify_html_report.py): 스킴 한정 정규식(`https`/`ftp(s)`/`//`)이 `url(file:·data:·blob:·behavior:)`를 놓치던 갭(7차 평가 P1a, 실측 미검출)을, §2 골격이 `url()`을 0건 쓴다는 사실에 기대 `url(` 자체를 위반으로 보는 fail-closed로 교체(`CSS_URL_RE`). 인라인 `style=`·`<style>` 양 경로 동시 적용. 골든 false-fail 0·회귀 테스트 +4(file/data/blob/inline). HTML 출력 검사기 하드닝일 뿐 진단 카탈로그·채점 무변경.
+- **[CI] 버전 줄 통째 삭제도 실패** (check_version.py): main()이 마커 부재(MISSING)를 '건너뜀'으로만 처리해, 핵심문서(루트 README·스킬 README·CHANGELOG)에서 `현재 버전:`/`## v` 줄을 통째로 지우면 CI가 통과하던 false-pass(7차 평가 P2a, 실측 재현)를 차단 — 불일치·BROKEN과 마찬가지로 MISSING도 실패로 집계. find_version은 불변(단위 6테스트 유지), main() 회귀 테스트 +2.
+- **[CI] `timeout-minutes: 10`** (ci.yml): 무한 루프 시 러너 6시간 점유 방어(7차 평가 P2b 중 채택분). 액션 SHA pinning은 기각(`permissions: contents: read`뿐+Dependabot 부재 → stale SHA·수동 마찰), pytest 버전 고정은 보류(BACKLOG BL-32).
+- **[Docs] 스킬 README 수동설치 명령 교정** (skills/project-doctor/README.md): "이 스킬 폴더만 받았을 때" 안내(BL-30)가 정작 `skills/project-doctor` 상대경로를 복사해, 스킬 폴더만 받은 사용자에겐 그 경로가 없어 실패하던 자기모순(7차 평가 P0)을 현재 폴더(`.`) 복사로 수정. PowerShell은 `dest`가 이미 있을 때 한 단계 중첩 복사되는 `Copy-Item . dest` 함정을 피해 `.\*` 와일드카드 사용(PS5.1 실측 검증).
+- 검사기·CI·문서만 변경. 진단 카탈로그(ID)·채점기·픽스처·정답지 무변경 → 탐지율 불변. (채택 4·기각/보류 5 상세: 개발 저장소 BACKLOG N.)
+
 ## v2.7.8
 - HTML 결과지 보안 검증기 `tools/verify_html_report.py` 추가 (BL-31) — 허용목록 fail-closed로 낯선 태그·이벤트 핸들러·외부 리소스(인라인 style·meta refresh 포함)·위험 URI·charset 부재·비밀키 값 검사. report-formats.md §2/§5가 생성 후 호출. 검사기 추가일 뿐 탐지 카탈로그·채점 무변경.
 
