@@ -1,5 +1,12 @@
 # 변경 이력 (CHANGELOG)
 
+## v2.7.5 — 2026-06-14 (검사기 하드닝 — 전체 코드 리뷰 Optional 반영)
+- **[Fix] 표지 식별·주버전 판정을 표지 첫 코드블록으로 한정** (verify_report_format): `check_cover`(FORM-02/03/04)·`detect_major_version`이 전체 줄을 봐서, 표지에 실제 `스킬 버전:` 줄이 없어도 본문 펜스 안 예시(`스킬 버전: v1.0.0`)가 표지를 대신해 FORM-03을 충족하고 major를 v1로 오판→숙제(FORM-10)를 건너뛰던 우회를 봉합. 새 `cover_block()`으로 첫 코드블록만 판정에 쓴다(제목 헤딩은 펜스 밖이라 `detect_mode`가 따로 봄).
+- **[Fix] check_version.find_version 깨진-최신 헤딩 누락**: 마커(`## v`)가 여러 줄인 CHANGELOG에서 최신(첫) 헤딩이 깨졌을 때 그 아래 과거 정상 헤딩으로 새던 것을, 첫 마커 줄에서 판정 확정(없으면 BROKEN)으로 수정. docstring '첫 줄을 보고'와 동작 일치.
+- **[Robustness] 위치 셀 길이 상한**(check_location_sampling): `FILENAME_RE`가 비정상적으로 긴 셀에서 catastrophic backtracking(O(n²)·10만 자 122초)을 내던 것을 `MAX_LOC_LEN`(2000) 상한으로 차단. 현실 셀(<100자) 정상 추출엔 무영향.
+- **[CI] 회귀 테스트 +14**(총 84): `test_check_version`(4분기)·`test_run_checks`(게이트 합성)·`test_check_scoring_regression` 신설 + 표지 펜스·위치 상한 회귀. 다른 5개 검사기에만 있던 `test_*.py` 규율을 check_version/scoring/run_checks까지 확장.
+- 검사기·테스트·문서(버전)만 변경. 진단 카탈로그·채점기·픽스처·정답지 무변경 → 탐지율 불변.
+
 ## v2.7.4 — 2026-06-14 (FORM-12 빈 기계블록 사각지대 보강 — Codex 리뷰)
 - **[Fix] FORM-12 빈 기계블록(`발견ID: (없음)`) 사각지대**: 본문 `###` 발견 항목이 0개이고 `## 부록`에만 카탈로그 ID가 있을 때, `check_four_fields`의 `if not ids: return`이 FORM-12 교차검사에 도달하기 전에 반환해 "부록 전용 ID ↔ `발견ID: (없음)`" 모순을 통과시키던 빈틈을 봉합. 이 분기에서도 `collect_body_catalog_ids`로 부록 ID를 교차검사한다 — report-template 9절("발견ID 블록엔 본문·부록 구분 없이 모든 발견 ID를 빠짐없이") 위반을 검출. 사각지대 조건은 (발견ID:(없음)) AND (### 0개) AND (부록 ID ≥1)로 좁다. 회귀 테스트 +1(총 70).
 - 검사기·테스트·문서(버전)만 변경. 진단 카탈로그·채점기·픽스처·정답지 무변경 → 탐지율 불변.

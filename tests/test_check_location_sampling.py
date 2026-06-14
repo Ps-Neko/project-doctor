@@ -84,3 +84,21 @@ def test_fenced_id_examples_ignored():
 
 def test_usage_error_returns_1():
     assert cls.main(["prog"]) == 1
+
+
+def test_long_location_cell_is_length_capped():
+    """비정상적으로 긴 위치 셀은 MAX_LOC_LEN으로 잘라 FILENAME_RE 백트래킹 폭주(ReDoS)를 막는다.
+
+    상한 너머의 파일명은 추출되지 않는다(현실 위치 셀은 <100자라 정상 추출엔 무영향).
+    이전엔 상한 없이 finditer가 셀 전체를 훑어 10만 자 셀에서 catastrophic backtracking(O(n²))이 났다."""
+    far = "a" * cls.MAX_LOC_LEN + " realfile.py"  # realfile.py는 상한 너머에 위치
+    rows = cls.parse_expected_locations(_lines(
+        "## 심은 문제 (2건)\n"
+        "| ID | 위치 | 심각도 |\n"
+        "|----|------|--------|\n"
+        f"| DUP-01 | {far} | 🔴 |\n"
+        "| DUP-02 | near.py 한 곳 | 🟡 |\n"
+    ))
+    d = dict(rows)
+    assert "realfile.py" not in d["DUP-01"]  # 상한으로 잘려 미추출 (ReDoS 차단의 부산물)
+    assert d["DUP-02"] == {"near.py"}        # 정상 길이 셀은 그대로 추출(무영향)

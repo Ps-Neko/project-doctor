@@ -28,6 +28,9 @@ from compare_report import (
 )
 
 SAMPLE_SIZE: int = 5
+# 위치 셀 길이 상한 — 비정상적으로 긴 셀에서 FILENAME_RE 백트래킹 폭주(ReDoS·O(n²))를 막는다.
+# 현실 위치 셀은 <100자라 정상 추출엔 무영향(상한 너머의 파일명만 추출에서 빠진다).
+MAX_LOC_LEN: int = 2000
 # 위치 셀·보고서에서 '파일명'으로 인정할 확장자 (알려진 소스/설정/문서 확장자).
 # 파일명은 ASCII 본체 + 확장자로 보고, 확장자 뒤에 영숫자가 이어지면(예: .python)
 # 매치하지 않는다. \b 대신 lookahead 를 쓰는 이유: 파이썬 re 의 \w 는 한글도 포함해
@@ -76,7 +79,7 @@ def parse_expected_locations(lines: list[str]) -> list[tuple[str, set[str]]]:
             continue  # 구분선·빈 셀
         the_id = cells[id_col]
         loc = cells[loc_col] if 0 <= loc_col < len(cells) else ""
-        files = {m.group(0) for m in FILENAME_RE.finditer(loc)}
+        files = {m.group(0) for m in FILENAME_RE.finditer(loc[:MAX_LOC_LEN])}
         rows.append((the_id, files))
     return rows
 

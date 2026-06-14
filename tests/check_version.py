@@ -30,15 +30,13 @@ def find_version(path: Path, marker: str):
     """파일에서 marker가 든 첫 줄을 보고 (truth | MISSING | BROKEN)을 돌려준다."""
     if not path.exists():
         return MISSING
-    marker_seen = False
     for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
         if marker in line:
-            marker_seen = True
+            # 첫 마커 줄에서 판정을 확정한다 — CHANGELOG처럼 마커(## v)가 여러 줄이면 최신(첫)
+            # 헤딩이 깨졌을 때 그 아래 과거 정상 헤딩으로 새지 않고 BROKEN으로 잡는다(docstring 일치).
             m = VER.search(line)
-            if m:
-                return m.group(1)
-    # 마커는 봤는데 버전 파싱이 안 됐다면 깨진 표기로 본다.
-    return BROKEN if marker_seen else MISSING
+            return m.group(1) if m else BROKEN
+    return MISSING
 
 
 def main() -> int:
