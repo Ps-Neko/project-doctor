@@ -363,3 +363,22 @@ def test_appendix_id_satisfies_machine_block(tmp_path: Path) -> None:
         _checkup_report(finding_block=block, found_line="발견ID: DUP-01, BIG-02"))
     assert result.returncode == 0, result.stdout + result.stderr
     assert "FORM-12" not in result.stdout
+
+
+def test_appendix_id_with_empty_machine_block_fails(tmp_path: Path) -> None:
+    """발견ID:(없음)인데 부록에만 발견 ID가 있으면 FORM-12 (Codex 리뷰 — 빈 기계블록 사각지대).
+
+    ### 발견 항목은 0개라 기존 FORM-09('(없음)인데 본문 항목 있음')에 안 걸리지만, 부록(## 부록)에
+    [BIG-02]가 있으면 9절 계약(발견ID 줄은 본문·부록의 모든 ID를 담아야 함) 위반이다. 이전엔
+    `if not ids: return`이 FORM-12 교차검사 전에 빠져나가 이 모순을 통과시켰다."""
+    block = (
+        "## 부록: 나머지 발견 항목\n"
+        "- ⚪ [BIG-02] 거대 함수 — `main.py`의 process_orders 약 70줄\n"
+    )
+    result = _write_and_run(
+        tmp_path,
+        _checkup_report(finding_block=block, found_line="발견ID: (없음)",
+                        homework_line="숙제: (없음)"))
+    assert result.returncode == 1
+    assert "FORM-12" in result.stdout
+    assert "BIG-02" in result.stdout

@@ -243,12 +243,22 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
             current.append(line)
 
     if not ids:
-        # 발견ID가 명시적 '(없음)'인데 본문에 발견 항목이 있으면 모순(사람용 본문 ↔ 기계 블록 불일치).
+        # 발견ID가 명시적 '(없음)'인데 본문/부록에 발견이 있으면 모순(사람용 본문 ↔ 기계 블록 불일치).
         # 단, 기계 블록이 형식 위반(FORM-05/06)으로 ids를 못 읽은 경우는 그 위반이 이미 보고됐으므로
         # 여기서 중복 보고하지 않는다 (machine_ok가 False면 ids=[]는 '실패'이지 '(없음)'이 아님).
         if machine_ok and finding_blocks:
             violations.append(
                 "FORM-09 발견ID는 (없음)인데 본문에 발견 항목(### 🔴/🟡/⚪)이 있습니다")
+        elif machine_ok:
+            # ### 발견 항목은 없지만 부록(## 부록)에만 카탈로그 ID가 있는 경우 — 아래 FORM-12
+            # 교차검사가 이 조기 return에 가려 사각지대였다(Codex 리뷰). 부록 전용 ID도 9절
+            # ("발견ID 블록엔 본문·부록 구분 없이 모든 발견 ID") 위반이므로 여기서 함께 잡는다.
+            body_set = collect_body_catalog_ids(content)
+            if body_set:
+                violations.append(
+                    "FORM-12 발견ID는 (없음)인데 본문·부록에 발견 ID가 있습니다: "
+                    f"{', '.join(sorted(body_set))} "
+                    "(9절 — 발견ID 줄은 본문·부록의 모든 ID를 빠짐없이 담아야 합니다)")
         return
 
     if not finding_blocks:
