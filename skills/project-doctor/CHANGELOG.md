@@ -1,5 +1,9 @@
 # 변경 이력 (CHANGELOG)
 
+## v2.7.7 — 2026-06-14 (체크포인트 미추적 파일 투명화 — 외부 평가 6차)
+- **[Security] 실행 전 체크포인트 `git add -A` 투명화**(prescription-protocol): 체크포인트가 미추적·비gitignore 파일까지 사용자 모르게 로컬 커밋에 쓸어담던 것을 ① `git status`로 포함될 미추적 파일 표시 → ② 비밀키·개인정보(SEC-01/PII-01) 의심 시 경고·확인 → ③ -A 진행으로 보강. 비개발자가 흔히 gitignore 안 한 민감 파일을, *비밀키를 git 이력에서 찾아내는 도구*가 거꾸로 이력에 넣던 자기모순 해소. ★복원 완전성(왜 -A인가)은 유지 — 제거가 아니라 silent sweep만 차단.
+- 절차 문서만 변경. 검사기·진단 카탈로그·채점기·픽스처·정답지 무변경 → 탐지율 불변.
+
 ## v2.7.6 — 2026-06-14 (SEC 패턴 정합·POSIX 복원·symlink 회귀 — 외부 평가 5차)
 - **[Security] release-check SEC-01 탐지 패턴 보강**: 보고서 자가점검기 FORM-11(verify_report_format)은 잡지만 1차 탐지 지시문 SEC-01엔 없던 Google API 키(`AIza…`)·`sk-` API 키 2종을 SEC-01 탐지 목록에 추가. "보고서에 새면 잡지만 프로젝트에서 처음엔 안 찾는" 1차 탐지기↔2차 누출방지기 비대칭 해소. (외부 평가는 Slack·개인키 누락도 지적했으나 그 둘은 이미 SEC-01에 존재 — 실제 갭은 2종.)
 - **[Fix] git 없는 환경 백업 복원 OS 분기**(prescription-protocol): 되돌리기 복원 명령이 PowerShell `Copy-Item` 단일이라 macOS/Linux에서 깨진 명령이 인쇄될 위험 → Windows/POSIX(`cp -R`) 분기 병기, 실행 OS에 맞는 한 줄만 인쇄하도록 명시.
