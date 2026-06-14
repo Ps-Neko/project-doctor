@@ -1,5 +1,11 @@
 # 변경 이력 (CHANGELOG)
 
+## v2.7.6 — 2026-06-14 (SEC 패턴 정합·POSIX 복원·symlink 회귀 — 외부 평가 5차)
+- **[Security] release-check SEC-01 탐지 패턴 보강**: 보고서 자가점검기 FORM-11(verify_report_format)은 잡지만 1차 탐지 지시문 SEC-01엔 없던 Google API 키(`AIza…`)·`sk-` API 키 2종을 SEC-01 탐지 목록에 추가. "보고서에 새면 잡지만 프로젝트에서 처음엔 안 찾는" 1차 탐지기↔2차 누출방지기 비대칭 해소. (외부 평가는 Slack·개인키 누락도 지적했으나 그 둘은 이미 SEC-01에 존재 — 실제 갭은 2종.)
+- **[Fix] git 없는 환경 백업 복원 OS 분기**(prescription-protocol): 되돌리기 복원 명령이 PowerShell `Copy-Item` 단일이라 macOS/Linux에서 깨진 명령이 인쇄될 위험 → Windows/POSIX(`cp -R`) 분기 병기, 실행 OS에 맞는 한 줄만 인쇄하도록 명시.
+- **[CI] check_write_boundary symlink 회귀 테스트 +2**: 루트 밖 가리키는 심링크가 resolve() 후 '밖' 판정(exit 1)·루트 안 심링크는 통과(exit 0)를 회귀 고정(심링크 생성 권한 없으면 skip). TOCTOU(검사 후 교체)는 도구 범위 밖(문서화된 한계)이라 검사 시점 분류만 잠근다.
+- 검사기·테스트·절차 문서만 변경. 진단 카탈로그(ID)·채점기·픽스처·정답지 무변경 → 탐지율 불변.
+
 ## v2.7.5 — 2026-06-14 (검사기 하드닝 — 전체 코드 리뷰 Optional 반영)
 - **[Fix] 표지 식별·주버전 판정을 표지 첫 코드블록으로 한정** (verify_report_format): `check_cover`(FORM-02/03/04)·`detect_major_version`이 전체 줄을 봐서, 표지에 실제 `스킬 버전:` 줄이 없어도 본문 펜스 안 예시(`스킬 버전: v1.0.0`)가 표지를 대신해 FORM-03을 충족하고 major를 v1로 오판→숙제(FORM-10)를 건너뛰던 우회를 봉합. 새 `cover_block()`으로 첫 코드블록만 판정에 쓴다(제목 헤딩은 펜스 밖이라 `detect_mode`가 따로 봄).
 - **[Fix] check_version.find_version 깨진-최신 헤딩 누락**: 마커(`## v`)가 여러 줄인 CHANGELOG에서 최신(첫) 헤딩이 깨졌을 때 그 아래 과거 정상 헤딩으로 새던 것을, 첫 마커 줄에서 판정 확정(없으면 BROKEN)으로 수정. docstring '첫 줄을 보고'와 동작 일치.

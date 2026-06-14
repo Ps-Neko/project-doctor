@@ -41,7 +41,9 @@
    - 검증 결과 (무엇으로 검증했고 결과가 어땠는지)
    - **되돌리기 한 줄 (항상 인쇄)**:
      - git: `git revert --no-edit <변경 커밋 해시>` ("이 한 줄이면 방금 변경만 안전하게 취소됩니다")
-     - 백업: `Copy-Item -Recurse -Force ".project-doctor/backup/<일시-항목ID>/*" "<프로젝트 폴더>"` 
+     - 백업(Windows): `Copy-Item -Recurse -Force ".project-doctor/backup/<일시-항목ID>/*" "<프로젝트 폴더>"`
+     - 백업(macOS/Linux): `cp -R ".project-doctor/backup/<일시-항목ID>/." "<프로젝트 폴더>/"`
+     - → **실행 OS에 맞는 한 줄만 인쇄**한다 (비-Windows에서 PowerShell 명령을 그대로 주면 복원이 깨진다).
 5. 다음 승인 항목이 있으면 1번부터 반복 (항목마다 별도 커밋/백업 — 항목 단위로 되돌릴 수 있게).
 6. 되돌리기·복원 후에도 `.project-doctor/`(백업·검증 캐시)는 기본적으로 보존한다 (다시 되돌릴 때 필요). 사용자가 정리를 원하면 — 삭제 작업이므로 사전 질문 후 삭제한다.
 
