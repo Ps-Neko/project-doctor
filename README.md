@@ -24,6 +24,7 @@
 1. **진단 시 프로젝트 내용이 Claude(Anthropic) 서버로 전송됩니다** (Claude Code의 기본 동작). 회사 기밀·고객 데이터가 포함된 프로젝트라면 회사의 AI 사용 정책을 먼저 확인하세요.
 2. **비용**: 검진은 Claude 사용량(토큰)을 소모합니다. 정밀 검진(`--deep`)은 수 배 더 듭니다.
 3. **검사 범위와 면책**: 진단 카탈로그에 정의된 알려진 패턴만 검사합니다. 보안 취약점 분석·법적 검토는 범위 밖이며, 결과에 대한 최종 판단과 책임은 사용자에게 있습니다.
+4. **정적 분석 프로그램이 아닙니다**: 이 도구는 고정된 검사기가 아니라 Claude가 따르는 진단 절차(지시문)입니다. 같은 프로젝트라도 **모델 버전이나 프로젝트 구조에 따라 결과가 달라질 수 있습니다** (상세: [측정의 한계](./EVALS.md)).
 
 ## 설치
 
@@ -53,6 +54,8 @@ New-Item -ItemType Directory -Force ~/.claude/skills
 Copy-Item -Recurse -Force skills/project-doctor ~/.claude/skills/
 ```
 macOS/Linux: `mkdir -p ~/.claude/skills && cp -r skills/project-doctor ~/.claude/skills/`
+
+> 업데이트(재설치) 시에는 옛 파일이 남지 않도록 **먼저 기존 폴더를 지우세요** — Windows `Remove-Item -Recurse -Force ~/.claude/skills/project-doctor`, macOS/Linux `rm -rf ~/.claude/skills/project-doctor` (그다음 위 복사). 자동 스크립트(`install.ps1`/`install.sh`)는 이 과정을 알아서 합니다.
 </details>
 
 ## 사용법

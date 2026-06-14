@@ -58,6 +58,9 @@ if (-not (Test-Path (Join-Path $Src 'SKILL.md'))) {
 
 $srcVer = Get-SkillVersion -Path (Join-Path $Src 'SKILL.md')
 New-Item -ItemType Directory -Force -Path $DstRoot | Out-Null
+# 기존 설치 폴더를 먼저 비운다 — 업데이트에서 사라진/개명된 참조 문서가 남지 않도록 (install.sh의 rm -rf와 동작 일치).
+# $DstRoot(다른 스킬들이 든 ~/.claude/skills)가 아니라 $Dst(project-doctor 폴더)만 지운다.
+if (Test-Path $Dst) { Remove-Item -Recurse -Force -Path $Dst }
 Copy-Item -Recurse -Force -Path $Src -Destination $DstRoot
 Write-Host "[OK] 복사 완료: skills/$SkillName  ->  $Dst (v$srcVer)" -ForegroundColor Green
 Write-Host ""

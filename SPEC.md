@@ -86,6 +86,7 @@
 ```
 # 로컬 설치 — 부모 폴더 보장 + 재실행해도 안전 (중첩 복사 방지: 대상을 부모 폴더로 지정)
 New-Item -ItemType Directory -Force ~/.claude/skills
+# 업데이트(재설치) 시에는 옛 파일이 남지 않도록 먼저 기존 폴더를 지운다: Remove-Item -Recurse -Force ~/.claude/skills/project-doctor (자동 스크립트 install.ps1/.sh는 자동 처리)
 Copy-Item -Recurse -Force skills/project-doctor ~/.claude/skills/
 # 복사 후 Claude Code를 새로 시작해야 /project-doctor가 인식됨
 
