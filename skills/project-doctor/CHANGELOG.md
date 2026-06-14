@@ -1,5 +1,8 @@
 # 변경 이력 (CHANGELOG)
 
+## v2.7.8
+- HTML 결과지 보안 검증기 `tools/verify_html_report.py` 추가 (BL-31) — 허용목록 fail-closed로 낯선 태그·이벤트 핸들러·외부 리소스(인라인 style·meta refresh 포함)·위험 URI·charset 부재·비밀키 값 검사. report-formats.md §2/§5가 생성 후 호출. 검사기 추가일 뿐 탐지 카탈로그·채점 무변경.
+
 ## v2.7.7 — 2026-06-14 (체크포인트 미추적 파일 투명화 — 외부 평가 6차)
 - **[Security] 실행 전 체크포인트 `git add -A` 투명화**(prescription-protocol): 체크포인트가 미추적·비gitignore 파일까지 사용자 모르게 로컬 커밋에 쓸어담던 것을 ① `git status`로 포함될 미추적 파일 표시 → ② 비밀키·개인정보(SEC-01/PII-01) 의심 시 경고·확인 → ③ -A 진행으로 보강. 비개발자가 흔히 gitignore 안 한 민감 파일을, *비밀키를 git 이력에서 찾아내는 도구*가 거꾸로 이력에 넣던 자기모순 해소. ★복원 완전성(왜 -A인가)은 유지 — 제거가 아니라 silent sweep만 차단.
 - 절차 문서만 변경. 검사기·진단 카탈로그·채점기·픽스처·정답지 무변경 → 탐지율 불변.
