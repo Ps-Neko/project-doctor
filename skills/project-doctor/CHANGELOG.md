@@ -1,5 +1,12 @@
 # 변경 이력 (CHANGELOG)
 
+## v1.7.5 — 2026-06-15 (보안 미러 — dev v2.7.x 中 공개판 적용분: 발견ID 무결성 + 비밀키 패턴 + 체크포인트 투명화)
+- **[검사기] FORM-12 발견ID 양방향 무결성** (verify_report_format.py): 사람용 본문/부록의 카탈로그 ID 집합 ↔ 기계 발견ID 줄의 ID 집합이 정확히 일치하는지 교차검사. 한쪽에만 있는 ID(근거 없는 발견ID / 누락된 발견ID)는 채점기(compare_report)의 탐지율 오집계 원인이라 형식 위반으로 잡는다. 부록 전용 ID·빈 기계블록(`발견ID:(없음)`인데 부록에 ID) 사각지대 포함. 회귀 테스트 +4. (dev v2.7.3·v2.7.4 미러 — 공개판 verify는 자체 헬퍼를 쓰므로 dev의 compare_report 단일출처화 리팩터는 제외.)
+- **[보안 문서] SEC-01 탐지 패턴에 Google·OpenAI/Anthropic류 키 추가** (release-checklist.md): `AIza…`(Google API)·`sk-…`(OpenAI/Anthropic류)를 런타임 스캔 패턴 목록에 명시 — 검사기 코드(SECRET_PATTERNS)엔 이미 있었으나 에이전트가 사용자 프로젝트를 스캔할 때 읽는 문서엔 빠져 1차↔2차 탐지 비대칭이 있었다. (dev v2.7.6 미러.)
+- **[보안 행동] 체크포인트 `git add -A` 투명화** (prescription-protocol.md §1): 비개발자가 모르게 미추적 민감 파일을 이 컴퓨터 git 기록에 넣는 'silent sweep'을 막기 위해, `git status --short`로 포함될 미추적 파일을 먼저 보이고 SEC-01·PII-01 의심 파일은 경고·확인 후 `-A`로 진행. 복원 완전성(왜 -A인지)은 유지. (dev v2.7.7 미러.)
+- **[보안 문서] 셸 명령 인젝션 주의** (release-checklist.md): 남의 프로젝트에 `git log`/`git grep`·`Select-String`을 돌릴 때 모든 인자를 따옴표로 감싸고 파일 내용은 명령줄이 아니라 argv로만 넘기라는 공통 주의 추가. (dev v2.7.11 미러.)
+- 검사기 1건은 형식 계약(FORM-12) 강화, 나머지 3건은 보안 문서·행동 절차. 진단 카탈로그·채점기·픽스처·정답지 무변경 → 진단 탐지율 불변.
+
 ## v1.7.4 — 2026-06-14 (수동 설치 업데이트 stale 파일 안내 — 외부 평가 7차 재평가)
 - **[Docs] 수동 설치 안내에 '업데이트 시 기존 폴더 먼저 삭제' 추가** (루트 README·스킬 README): 기존 안내가 "여러 번 실행해도 안전"이라 적혀 있었으나, 수동 복사(`Copy-Item skills/project-doctor`)는 병합이라 삭제·개명된 옛 파일이 `~/.claude/skills/project-doctor`에 stale로 남는다. 업데이트 시 먼저 폴더를 지우라는 안내(`Remove-Item -Recurse -Force`/`rm -rf`)로 정정. dev v2.7.10과 동일 취지(dev는 스킬 README `<details>`, 공개판은 양쪽 README가 같은 오해 소지였어 둘 다 수정).
 - 문서만 변경. 검사기·진단 카탈로그·채점기·픽스처·정답지 무변경 → 탐지율 불변.
