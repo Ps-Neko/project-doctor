@@ -12,11 +12,15 @@
 
 ## 1. 전용 점검 항목 (5종)
 
+> 셸 명령 공통 주의: 아래 항목들은 남의 프로젝트를 상대로 셸 명령(`git log`/`git grep`·`Select-String` 등)을 돌린다 — 커밋 해시·파일 경로 등 모든 인자는 따옴표로 감싸고, 파일 **내용**은 명령줄·코드에 끼워 넣지 말고 인자(argv)로만 넘긴다 (악의적 파일명·내용의 명령 둔갑 방지).
+
 ### SEC-01 — 하드코딩된 비밀키·토큰 (🔴)
 - 탐지 패턴 (Grep, 대소문자 무시):
   - AWS Access Key: `AKIA[0-9A-Z]{16}`
   - GitHub 토큰: `ghp_[A-Za-z0-9]{36}`, `github_pat_[A-Za-z0-9_]{20,}`
   - Slack: `xox[baprs]-[A-Za-z0-9-]{10,}`
+  - Google API 키: `AIza[0-9A-Za-z_\-]{35}`
+  - OpenAI/Anthropic류 API 키: `sk-[A-Za-z0-9_-]{20,}`
   - 개인키 블록: `-----BEGIN [A-Z ]*PRIVATE KEY-----`
   - 일반형: `(api[_-]?key|secret|password|passwd|token)\s*[:=]\s*['"][^'"]{8,}['"]`
   - `.env*` 파일의 `이름=값` 줄 (절대 규칙 4: 파일 내용은 열람하지 않고 **존재와 줄 위치만**)

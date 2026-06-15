@@ -41,6 +41,8 @@ GRADE_LINE_RE = re.compile(r"^#\s*(🟢|🟡|🔴)\s*([ABCD])\s*—\s*(.+?)\s*$"
 FINDING_HEAD_RE = re.compile(r"^###\s+(🔴|🟡|⚪)")
 # 발견 항목 제목에 든 카탈로그 ID (예: `[DUP-01]`) — report-template 5절은 제목에 ID 필수.
 TITLE_ID_RE = re.compile(r"\[[A-Z]+-\d{2,}\]")
+# 압도 방지 부록(7절 "부록: 나머지 발견 항목") 헤딩 — 부록 항목 ID도 발견 집합에 포함된다.
+APPENDIX_HEAD_RE = re.compile(r"^##\s+부록")
 
 # 4요소 라벨 (5절 — 발견 항목마다 4줄)
 FOUR_FIELDS: tuple[str, ...] = ("무슨 뜻인가요?", "어디?", "고치면?", "승인 명령:")
@@ -140,6 +142,26 @@ def parse_found_ids(found_line: str) -> list[str]:
     return [part.strip() for part in body.split(",")]
 
 
+def collect_body_catalog_ids(content: list[str]) -> set[str]:
+    """사람용 본문에 '발견'으로 등장하는 카탈로그 ID([DUP-01] 등)를 모은다.
+
+    수집 범위는 두 곳뿐: ① 발견 항목 제목(### 🔴/🟡/⚪ ... [ID]) ② 부록(7절 "부록:
+    나머지 발견 항목") 안의 줄. 재검진 비교표(4절)·처치 경과 줄에 인용된 과거 ID([OLD-01] 등)는
+    '이번 검진의 발견'이 아니므로 범위에서 뺀다 — 전체 본문에서 대괄호 ID를 긁으면 그런 과거
+    인용이 거짓 불일치(FORM-12)로 잡히기 때문이다. content는 이미 outside_fence를 거친 줄."""
+    ids: set[str] = set()
+    in_appendix = False
+    for line in content:
+        stripped = line.strip()
+        if stripped.startswith("## "):  # 새 절 — 부록 진입/이탈 갱신 (그 줄 자체는 수집 안 함)
+            in_appendix = bool(APPENDIX_HEAD_RE.match(stripped))
+            continue
+        if FINDING_HEAD_RE.match(stripped) or in_appendix:
+            for m in TITLE_ID_RE.finditer(stripped):
+                ids.add(m.group(0).strip("[]"))
+    return ids
+
+
 def check_cover(lines: list[str], violations: list[str]) -> None:
     # 표지는 코드블록 안에 들어가므로 펜스를 가르지 않고 전체에서 본다.
     if detect_mode(lines) is None:
@@ -221,12 +243,22 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
             current.append(line)
 
     if not ids:
-        # 발견ID가 명시적 '(없음)'인데 본문에 발견 항목이 있으면 모순(사람용 본문 ↔ 기계 블록 불일치).
+        # 발견ID가 명시적 '(없음)'인데 본문/부록에 발견이 있으면 모순(사람용 본문 ↔ 기계 블록 불일치).
         # 단, 기계 블록이 형식 위반(FORM-05/06)으로 ids를 못 읽은 경우는 그 위반이 이미 보고됐으므로
         # 여기서 중복 보고하지 않는다 (machine_ok가 False면 ids=[]는 '실패'이지 '(없음)'이 아님).
         if machine_ok and finding_blocks:
             violations.append(
                 "FORM-09 발견ID는 (없음)인데 본문에 발견 항목(### 🔴/🟡/⚪)이 있습니다")
+        elif machine_ok:
+            # ### 발견 항목은 없지만 부록(## 부록)에만 카탈로그 ID가 있는 경우 — 아래 FORM-12
+            # 교차검사가 이 조기 return에 가려 사각지대였다(Codex 리뷰). 부록 전용 ID도 9절
+            # ("발견ID 블록엔 본문·부록 구분 없이 모든 발견 ID") 위반이므로 여기서 함께 잡는다.
+            body_set = collect_body_catalog_ids(content)
+            if body_set:
+                violations.append(
+                    "FORM-12 발견ID는 (없음)인데 본문·부록에 발견 ID가 있습니다: "
+                    f"{', '.join(sorted(body_set))} "
+                    "(9절 — 발견ID 줄은 본문·부록의 모든 ID를 빠짐없이 담아야 합니다)")
         return
 
     if not finding_blocks:
@@ -235,8 +267,10 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
         return
     # 발견 항목마다 ① 제목에 카탈로그 ID([DUP-01] 형식) ② 4요소 라벨이 그 블록 안에 있는지
     # 항목별로 검사 (전체 개수 합산이 아니라). 제목 ID는 재검진 비교·승인 명령 추적의 토대다.
+    titles_ok = True
     for idx, (title, block) in enumerate(zip(finding_titles, finding_blocks), 1):
         if not TITLE_ID_RE.search(title):
+            titles_ok = False
             violations.append(
                 f"FORM-09 발견 {idx}번 항목 제목에 카탈로그 ID([DUP-01] 형식)가 없습니다: "
                 f"{title[:40]}")
@@ -245,6 +279,25 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
         if missing:
             violations.append(
                 f"FORM-09 발견 {idx}번 항목에 4요소 라벨 누락: {', '.join(missing)}")
+
+    # FORM-12: 사람용 본문/부록 ID 집합 ↔ 기계 발견ID 블록 ID 집합이 정확히 일치하는가 (9절 계약:
+    # "발견ID 블록에는 본문·부록 구분 없이 이번 검진의 모든 발견 ID를 빠짐없이"). 한쪽에만 있는 ID는
+    # 사람이 읽는 보고서와 채점기가 읽는 줄이 어긋났다는 뜻 — 탐지율 오집계·근거 없는 ID의 원인이 된다.
+    # 제목 ID가 누락된 항목이 있으면(위 FORM-09) 본문 집합이 불완전하므로 교차검사를 보류한다 —
+    # 제목 ID부터 채워야 이 대조가 의미를 가지며, 같은 뿌리의 위반을 두 번 보고하지 않는다.
+    if titles_ok:
+        machine_set = set(ids)
+        body_set = collect_body_catalog_ids(content)
+        only_machine = sorted(machine_set - body_set)
+        only_body = sorted(body_set - machine_set)
+        if only_machine:
+            violations.append(
+                "FORM-12 발견ID 줄에 있으나 본문·부록 어디에도 발견 항목이 없는 ID: "
+                f"{', '.join(only_machine)} (9절 — 모든 발견 ID는 본문/부록에 근거가 있어야 합니다)")
+        if only_body:
+            violations.append(
+                "FORM-12 본문·부록 발견 항목에 있으나 발견ID 줄에서 누락된 ID: "
+                f"{', '.join(only_body)} (9절 — 발견ID 줄은 본문·부록의 모든 ID를 빠짐없이 담아야 합니다)")
 
 
 def check_homework(lines: list[str], violations: list[str]) -> None:
