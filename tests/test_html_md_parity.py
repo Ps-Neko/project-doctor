@@ -59,6 +59,23 @@ def test_missing_grade_label_detected(tmp_path):
     assert "치료가 필요해요" in r.stdout
 
 
+def test_title_only_value_is_not_counted_as_present(tmp_path):
+    # 가시 텍스트 정의: 본문엔 없고 <title>(머리말)에만 있는 값은 '있다'고 판정되면 안 된다.
+    # 종합 판정 라벨을 본문에선 다른 라벨로 바꿔 지우고, <title>에만 심은 HTML → 미달이어야 한다.
+    # (head/title을 추출에서 제외하지 않던 구버전 추출기에선 이 케이스가 거짓 통과했다.)
+    original = GOLDEN_HTML.read_text(encoding="utf-8")
+    body_removed = original.replace("치료가 필요해요", "양호해요")
+    tampered = body_removed.replace(
+        "<title>프로젝트 건강검진 결과지 — messy-project</title>",
+        "<title>프로젝트 건강검진 결과지 — messy-project · 치료가 필요해요</title>",
+    )
+    # 본문에서 라벨이 실제로 사라지고 title로만 옮겨졌는지 확인(테스트 자체의 전제 검증).
+    assert "<title>" in tampered and "치료가 필요해요" in tampered
+    r = run_parity_with_html_text(GOLDEN_MD, tampered, tmp_path)
+    assert r.returncode == 1, r.stdout
+    assert "치료가 필요해요" in r.stdout
+
+
 def test_golden_html_also_passes_security():
     # 정본 쌍 HTML은 내용 충실성(parity)뿐 아니라 보안 검증기(verify_html_report)도 통과해야 한다 —
     # 사용자가 실제로 받아보는 산출물이므로 둘 다 만족해야 의미가 있다.

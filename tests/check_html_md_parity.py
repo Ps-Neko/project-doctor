@@ -42,28 +42,33 @@ from verify_report_format import (  # noqa: E402
 
 
 class _TextExtractor(HTMLParser):
-    """태그를 벗기고 가시 텍스트만 모은다 (엔티티는 convert_charrefs로 복원).
+    """태그를 벗기고 본문 가시 텍스트만 모은다 (엔티티는 convert_charrefs로 복원).
 
-    style/script 안쪽은 비가시 영역이라 텍스트에서 제외한다 — CSS의 클래스명·속성값이
-    본문 텍스트로 새어 들어가 '있는 척'(거짓 통과) 하지 못하게."""
+    비가시 영역(head·title·style·script) 안쪽은 텍스트에서 제외한다 — CSS의 클래스명·
+    속성값이나 <title>처럼 본문에 안 보이는 값이 '있는 척'(거짓 통과) 하지 못하게. 이 검사가
+    보는 것은 사용자가 화면에서 실제로 읽는 가시 텍스트다.
 
-    _SKIP_TAGS = frozenset({"style", "script"})
+    이 태그들은 서로 중첩되므로(<head> 안에 <title>·<style>) 단일 boolean이 아니라 깊이
+    카운터로 추적한다 — boolean이면 <head> 안의 </title>/</style>가 head를 벗어나기도 전에
+    skip을 풀어, 그 뒤 head 내용을 본문으로 오인할 수 있다."""
+
+    _SKIP_TAGS = frozenset({"head", "title", "style", "script"})
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self._chunks: list[str] = []
-        self._in_skip = False
+        self._skip_depth = 0
 
     def handle_starttag(self, tag, attrs):
         if tag.lower() in self._SKIP_TAGS:
-            self._in_skip = True
+            self._skip_depth += 1
 
     def handle_endtag(self, tag):
-        if tag.lower() in self._SKIP_TAGS:
-            self._in_skip = False
+        if tag.lower() in self._SKIP_TAGS and self._skip_depth > 0:
+            self._skip_depth -= 1
 
     def handle_data(self, data):
-        if not self._in_skip:
+        if self._skip_depth == 0:
             self._chunks.append(data)
 
     def text(self) -> str:
