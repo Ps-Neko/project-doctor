@@ -46,10 +46,10 @@ def test_missing_finding_id_detected(tmp_path):
 
 
 def test_missing_version_detected(tmp_path):
-    tampered = GOLDEN_HTML.read_text(encoding="utf-8").replace("v2.7.7", "v9.9.9")
+    tampered = GOLDEN_HTML.read_text(encoding="utf-8").replace("v2.7.12", "v9.9.9")
     r = run_parity_with_html_text(GOLDEN_MD, tampered, tmp_path)
     assert r.returncode == 1
-    assert "v2.7.7" in r.stdout
+    assert "v2.7.12" in r.stdout
 
 
 def test_missing_grade_label_detected(tmp_path):

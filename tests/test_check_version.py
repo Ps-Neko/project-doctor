@@ -56,6 +56,12 @@ def _stage_repo(tmp_path: Path, monkeypatch, root_readme: str) -> None:
     sk.mkdir(parents=True)
     (sk / "README.md").write_text("현재 버전: v9.9.9\n", encoding="utf-8")
     (sk / "CHANGELOG.md").write_text("## v9.9.9 — x\n", encoding="utf-8")
+    # 골든 보고서도 표지에 '스킬 버전:'을 인쇄하고 버전 정합 검사 대상이다(8차 평가 P0) — 가짜 레포에도 깐다.
+    gold = tmp_path / "tests" / "golden"
+    gold.mkdir(parents=True)
+    (gold / "checkup-report.md").write_text("스킬 버전: v9.9.9 · 모드: 건강검진\n", encoding="utf-8")
+    (gold / "checkup-report.html").write_text(
+        '<p class="meta">스킬 버전: v9.9.9 · 모드: 건강검진</p>\n', encoding="utf-8")
     monkeypatch.setattr(cv, "ROOT", tmp_path)
     monkeypatch.setattr(cv, "SKILL", tmp_path / "SKILL.md")
 

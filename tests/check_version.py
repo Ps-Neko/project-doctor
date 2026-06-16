@@ -57,6 +57,12 @@ def main() -> int:
         ("루트 README", ROOT / "README.md", "현재 버전:"),
         ("스킬 README", ROOT / "skills" / "project-doctor" / "README.md", "현재 버전:"),
         ("CHANGELOG 최신", ROOT / "skills" / "project-doctor" / "CHANGELOG.md", "## v"),
+        # 골든 검진 보고서도 표지에 '스킬 버전: vX.Y.Z'를 인쇄하므로, 버전 bump 때 골든을
+        # 갱신하지 않으면 표지가 stale 해진다(8차 평가 P0 — 실제로 v2.7.7에 4버전 동결돼 있었다).
+        # parity·형식 검증기·E2E 어느 게이트도 'SKILL 대비 stale'를 잡지 못했으므로 여기서 강제한다
+        # (.md는 코드펜스 안 '스킬 버전:' 줄, .html은 <p class=meta> 줄 — 같은 마커로 둘 다 잡힌다).
+        ("골든 보고서(.md)", ROOT / "tests" / "golden" / "checkup-report.md", "스킬 버전:"),
+        ("골든 보고서(.html)", ROOT / "tests" / "golden" / "checkup-report.html", "스킬 버전:"),
     ]
 
     print(f"기준(SKILL.md): v{truth}")

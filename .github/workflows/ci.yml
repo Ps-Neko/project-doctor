@@ -51,3 +51,6 @@ jobs:
 
       - name: golden 보고서 E2E (실보고서가 verify+compare 동시 통과하는지)
         run: python tests/run_checks.py tests/golden/checkup-report.md tests/fixtures/messy-project/EXPECTED.md
+
+      - name: golden 보고서 E2E — leaky (보안 픽스처 SEC/PII 위치까지 회귀)
+        run: python tests/run_checks.py tests/golden/leaky-report.md tests/fixtures/leaky-project/EXPECTED.md

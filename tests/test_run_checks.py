@@ -9,6 +9,7 @@ import run_checks
 
 TESTS = Path(__file__).resolve().parent
 GOLDEN = TESTS / "golden" / "checkup-report.md"
+LEAKY_GOLDEN = TESTS / "golden" / "leaky-report.md"
 MESSY_EXPECTED = TESTS / "fixtures" / "messy-project" / "EXPECTED.md"
 LEAKY_EXPECTED = TESTS / "fixtures" / "leaky-project" / "EXPECTED.md"
 
@@ -34,3 +35,8 @@ def test_all_three_gates_pass_for_golden() -> None:
 def test_partial_failure_returns_1() -> None:
     # golden(=messy 보고서)에 엉뚱한 정답지(leaky) → 채점·위치 게이트 실패 → 종합 1 (OR 합성).
     assert run_checks.main(["prog", str(GOLDEN), str(LEAKY_EXPECTED)]) == 1
+
+
+def test_leaky_golden_three_gates_pass() -> None:
+    # 보안 픽스처(leaky) 골든 — SEC/PII 발견 + 위치(app.py·config.js·notes.md)까지 3게이트 통과(8차 평가 P2).
+    assert run_checks.main(["prog", str(LEAKY_GOLDEN), str(LEAKY_EXPECTED)]) == 0

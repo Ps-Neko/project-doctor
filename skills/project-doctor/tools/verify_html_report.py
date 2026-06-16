@@ -52,6 +52,14 @@ CSS_URL_RE = re.compile(r"(?i)url\(")
 # charset 메타 (대소문자·따옴표 변형 허용).
 CHARSET_RE = re.compile(r"(?i)<meta[^>]*charset\s*=\s*['\"]?\s*utf-8")
 
+# 주석 내부 스캔 — 허위 종료 주석(`<!-->`)은 브라우저가 빈 주석을 즉시 닫아 뒤따르는 마크업을
+# 라이브로 렌더하지만, 파이썬 html.parser 는 그것을 주석 DATA 로 삼켜 통과시킨다(8차 평가 P1 — 실측).
+# 주석 안에서 허용목록 밖 태그·이벤트 핸들러를 발견하면 fail-closed 하고(handle_comment), 빈 급종료
+# 주석 토큰 자체도 raw 로 한 번 더 잡는다(이중 방어 — CDATA/PI/DECL 등 파서 분류 차이까지 대비).
+COMMENT_TAG_RE = re.compile(r"<\s*([A-Za-z][A-Za-z0-9]*)")
+COMMENT_ON_ATTR_RE = re.compile(r"(?i)\son[a-z]+\s*=")
+ABRUPT_COMMENT_RE = re.compile(r"<!---?>")
+
 # 비밀키 값 노출 휴리스틱 — verify_report_format.SECRET_PATTERNS 와 동기화(tests 가 검사).
 SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("AWS 액세스 키 ID", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
@@ -111,6 +119,20 @@ class _HtmlAuditor(HTMLParser):
         if self._in_style:
             self.style_text.append(data)
 
+    def handle_comment(self, data):
+        # 주석 DATA 안의 허용목록 밖 태그·이벤트 핸들러는, 허위 종료 주석(`<!-->`)으로 브라우저에선
+        # 라이브 마크업이 될 수 있으므로 fail-closed (파서↔브라우저 주석 경계 불일치 방어).
+        # 골격의 정상 주석(`<!-- 재검진이면… -->`)은 태그명·`on*=`가 없어 통과한다(false-fail 0).
+        for m in COMMENT_TAG_RE.finditer(data):
+            name = m.group(1).lower()
+            if name not in ALLOWED_TAGS:
+                self.violations.append(
+                    f"HTML-01 주석 내부 허용목록 밖 태그 <{name}> — 허위 종료 주석(<!-->)으로 "
+                    "브라우저에서 라이브 마크업이 될 수 있습니다")
+        if COMMENT_ON_ATTR_RE.search(data):
+            self.violations.append(
+                "HTML-02 주석 내부 이벤트 핸들러 속성 — 허위 종료 주석으로 스크립트 실행 벡터가 될 수 있습니다")
+
 
 def verify(html_text: str) -> list[str]:
     auditor = _HtmlAuditor()
@@ -126,6 +148,11 @@ def verify(html_text: str) -> list[str]:
 
     if not CHARSET_RE.search(html_text):
         violations.append('HTML-05 <meta charset="utf-8"> 가 없습니다 (인코딩 계약)')
+
+    if ABRUPT_COMMENT_RE.search(html_text):
+        violations.append(
+            "HTML-01 허위 종료 빈 주석(<!-->) — 브라우저가 주석을 즉시 닫아 뒤따르는 마크업이 "
+            "라이브가 됩니다 (파서가 주석으로 삼켜도 위반으로 처리)")
 
     for name, pattern in SECRET_PATTERNS:
         m = pattern.search(html_text)

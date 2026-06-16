@@ -112,6 +112,33 @@ def test_meta_refresh_redirect(tmp_path):
     assert "HTML-03" in r.stdout
 
 
+def test_abrupt_comment_xss_img(tmp_path):
+    # 허위 종료 주석(<!-->)으로 숨긴 XSS — 브라우저는 빈 주석을 즉시 닫아 <img onerror>가 라이브가
+    # 되지만 파이썬 html.parser 는 주석으로 삼킨다(8차 평가 P1). handle_comment + 급종료 토큰 검사로 차단.
+    r = run_html('<meta charset="utf-8"><!--><img src=x onerror=alert(1)>-->', tmp_path)
+    assert r.returncode == 1
+    assert "HTML-01" in r.stdout  # 주석 내부 낯선 태그 <img> (+ 급종료 주석 토큰)
+    assert "HTML-02" in r.stdout  # 주석 내부 onerror 이벤트 핸들러
+
+
+def test_abrupt_comment_triple_dash_xss(tmp_path):
+    # <!---> 변형도 같은 급종료 빈 주석 — 막혀야 한다.
+    r = run_html('<meta charset="utf-8"><!---><img src=x onerror=alert(1)>-->', tmp_path)
+    assert r.returncode == 1
+    assert "HTML-01" in r.stdout
+
+
+def test_normal_skeleton_comments_pass(tmp_path):
+    # 골격의 정상 주석(<!-- ... -->)은 태그명·on*= 가 없어 통과해야 한다 (false-fail 0 고정).
+    html = ('<meta charset="utf-8"><div class="doc">'
+            '<!-- 재검진이면 여기에 "지난 검진과 비교" 표를 같은 table로 -->'
+            '<!-- 압도 방지 적용 시에만 -->'
+            '<p>본문</p></div>')
+    r = run_html(html, tmp_path)
+    assert r.returncode == 0, r.stdout
+    assert "통과" in r.stdout
+
+
 def _load_tool_module():
     spec = importlib.util.spec_from_file_location("verify_html_report", TOOL)
     mod = importlib.util.module_from_spec(spec)

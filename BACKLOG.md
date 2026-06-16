@@ -133,3 +133,49 @@ GPT가 공개판만 보고 제안한 22건 중 16건은 이미 구현(다수 초
 - **[BL-32] CI 공급망 재현성(P2b)** — **timeout만 채택(v2.7.9), SHA pinning 기각, pytest 고정 보류**. ① `timeout-minutes: 10`: 1줄·무위험·무한루프 러너 점유 방어 → 채택. ② 액션 SHA pinning **기각**: `permissions: contents: read`뿐이라 침해 blast radius=소스 읽기+러너 CPU(레포 변조·릴리스 오염 불가), Dependabot 부재 + 수동 태그 bump 선례(`71d9dcf`)라 SHA 고정은 보안 패치 자동 유입 차단(stale SHA)+bump마다 수동 조회 마찰 = n≈1 과잉건축. ③ pytest 버전 고정 **보류**: 보안 아닌 안정성, 테스트는 stdlib만, pip도 미고정이라 반쪽 조치 — CI red 발생 시 재고.
 - **[P0] BL-30 수동설치 명령 자기모순 — → 완료 (v2.7.9)**. BL-30(4차)에서 만든 `<details>` 수동설치 fallback이 summary는 "이 스킬 폴더만 받았을 때"인데 명령은 `skills/project-doctor` 상대경로를 복사 → 스킬 폴더만 받은 사용자에겐 그 경로가 없어 실패(git blame: summary `a04b71c5` 갱신 vs 명령 `0e8bcc4` 잔존 = 문구만 고치고 본문 미수정). install.ps1/sh가 그 폴더만 배포하므로 "스킬 폴더만" 시나리오는 실재. **평가 처방은 함정**: `Copy-Item -Recurse -Force . dest`는 PS5.1에서 `dest`가 이미 있으면 1단계 중첩 복사(`project-doctor/project-doctor/SKILL.md`)→스킬 미인식(실측 재현). `.\*` 와일드카드로 교정(평탄 복사·실측), bash `cp -r . dest`는 OS 비대칭으로 함정 없음.
 - **반영 안 함(기각)**: ① **P1b HTML 임시파일→atomic move — 기각**: `verify_html_report.py`는 읽기전용 검사기(docstring "어떤 파일도 만들거나 고치지 않는다")라 수행도 안 하는 move를 강제 불가, HTML은 모델이 씀 = BL-16/18 '완전 강제 불가' 부류. 관찰도 과장(현 §2 절차가 이미 위반 시 저장 중단). ② **외부 코퍼스 3개+점수격차표 — 기각(=BL-14)**: 틀(`tests/external-corpus/`)·채점 경로(`run_checks` 실측 작동)·EVALS 한계 고지 이미 존재, 빈 건 외부 사용자 0(수요 게이트). 외부 0명에서 자작 충전 = 자기표본편향 재생산으로 측정 목적 무효(README.md:9-11이 그 위험 경고). ③ **대문제① '결정적 실행기 아님' — 기각(= M-(A) 4번째)**: 설계상 모델구동(승인 기반 진단 하네스)+EVALS 자인, `tools/`엔 읽기전용 검사기만(실행 엔진 부재가 의도). 규칙엔진화 = 신규 패턴 탐지 상실 + 포지셔닝 충돌. M-(A) 3번째 기각에 이어 4번째.
+
+## O. 8차 외부 평가 (2026-06-16, v2.7.11 상태, 종합 8.4/10 · PASS_WITH_WARNINGS)
+
+> v2.7.11(+PR#15) 상태 재평가. 8개 영역(catalog·scoring·security·ci·skill-docs·report-form·positioning·backlog-open) 평가자가 26건 제기, 적대 검증자가 **관찰 코드대조 + 처방 적대실행검증**(python/git-bash 실측, 저장소 무수정·임시폴더)로 전건 재현. 사실 주장은 또 대체로 정확(claimAccuracy FALSE 0건). 처방 1건이 함정(report-form E1-2 등급원↔라벨 부분문자열 검사 — 'D'가 본문 30회 등장해 모순 미검출). **채택 9 + 기각 3 + 보류 17(중복 병합 후).** 채택 9건 모두 진단 탐지 로직 불변(문서·테스트·픽스처·정답지·골든 표지·EVALS 산문 한정) → 사용자 프로젝트 검진 회귀 불가능.
+>
+> **→ 구현·검증 완료 (v2.7.12, 2026-06-16):** 사용자 승인 하에 채택 9건 전부 구현. 로컬 pytest(전건)·check_version·run_checks(messy/leaky 골든 3단)·HTML 차단 실측 통과. CHANGELOG v2.7.12 · 골든/버전 마커 v2.7.12 정합.
+
+### 채택 (→ v2.7.12 구현 완료)
+
+- **[P0] 골든 검진 보고서가 v2.7.7에 동결 — CI 어느 게이트도 못 잡음 (scoring/ci 병합)**. 골든 `tests/golden/checkup-report.{md,html}`가 'v2.7.7'인데 SKILL.md=v2.7.11(4패치 뒤짐). `check_version.py`는 README·CHANGELOG만, `verify_report_format`은 '존재+주버전'만, parity는 두 골든 상호 일치만 봐서 stale 미검출(114 passed인데도 구조적 동결). `test_html_md_parity.py:49·52`가 'v2.7.7' 하드코딩이라 한쪽만 바꾸면 `test_missing_version_detected` FAIL(결합 실측). **→ 완료**: 골든 2파일·parity 하드코딩 2곳·전 버전 마커를 v2.7.12로 동반 갱신 + `check_version.py` 검사 리스트에 골든 2파일('스킬 버전:' 마커) 추가('골든 표지==SKILL 버전' CI 강제). 실측 stale=exit1·fixed=exit0.
+- **[P1] EVALS가 코드(v2.7.11)보다 stale — 마지막 측정행 v2.7.8 (scoring/FRESH-EVALS 병합)**. `EVALS.md` 검진표 최신=v2.7.8, 주석은 v2.7.3까지. **→ 완료**: 새 측정 아닌 'CI 게이트 통과 기록'으로 v2.7.9~v2.7.11 행 1줄 + 탐지 영향 분석 v2.7.11까지 연장(PR#14/#15 명시). v2.7.9~11은 검사기·보안·CI·문서 한정이라 탐지율 불변. 근본책(check_version에 EVALS 강제)은 미채택 — 측정 로그라 마커 강제가 새 false-fail.
+- **[P1] verify_html_report: 허위 종료 주석(`<!-->`)으로 XSS 페이로드가 검사기 우회 (security E1-1)**. `_HtmlAuditor`에 `handle_comment`가 없어 주석 내부 미검사. python `html.parser`는 `<!-->`를 주석으로 삼키지만 브라우저는 '급종료(abrupt-closing)'로 처리 → `<!--><img src=x onerror=alert(1)>-->`가 rc=0 통과하나 브라우저에선 라이브(실측). **→ 완료**: `handle_comment`(주석 DATA의 허용목록 밖 태그→HTML-01, `on*=`→HTML-02 fail-closed) + 보조 `ABRUPT_COMMENT_RE=r'<!---?>'` raw 검사(이중 방어). 실측: 공격 `<!-->`·`<!--->` 둘 다 HTML-01+HTML-02 rc=1, 골격 정상주석 rc=0(false-fail 0). 회귀 테스트 +3. observation의 '`<!--><div>`가 rc=1' 진술은 거짓이라 그 근거 폐기.
+- **[P2] 보안 픽스처(leaky)는 골든 보고서가 없어 형식·위치 게이트가 E2E로 한 번도 안 돌아감 (ci E1-1)**. 골든 E2E(`run_checks.py`)는 messy만. leaky는 SEC/PII 축 유일 보안 픽스처인데 골든 부재 → 위치 게이트가 비보안 ID에만 회귀 고정. **→ 완료**: `tests/golden/leaky-report.md` 손작성(release-check 모드, 발견ID 6종, 시크릿 'AKIA…'/'ghp_…'로 마스킹 — 실제 값 인용 시 FORM-11 발화 함정 실측 회피) + ci.yml leaky E2E 스텝 + test_run_checks pytest 1건. 실측: 3게이트 통과·위치 SEC-01(app.py)·SEC-01(config.js)·PII-01(notes.md) 3/3 OK.
+- **[P1] README '품질 근거'가 '3회 100%'를 v1.0.0 측정인데 현재 버전 성능처럼 읽히게 함 (positioning E1-1)**. **→ 완료**: README:92 줄 끝에 측정-버전 단서 한 구절 보강(접두·접미 보존, 최소 diff). check_version은 '현재 버전:' 마커줄(8행)만 읽어 92행 산문 불가시(실측) → false-fail 0.
+- **[P2] release-check '비밀키 3회 100%'가 SEC-01 패턴 확장(v2.7.6) 이후 미재측정 (positioning E1-2)**. README:93 비밀키 주장이 시점 표기 없이 단언, EVALS release-check 표는 v2.0.1에서 멈춤. CHANGELOG v2.7.6이 SEC-01에 AIza·sk- 추가했으나 leaky 심은 8건은 미사용(grep 0건)이라 구측정 유효. **→ 완료**: README:93에 'v2.0.1 측정, 이후 패턴 확장은 표본 무관 불변' 단서 1줄.
+- **[P2] report-formats §5가 런타임 미배포(tests 전용) 도구를 md 검사기로 지칭 (skill-docs/report-form 병합)**. §5가 'md는 verify_report_format.py가 검사'라 하나 그 도구는 tests/에만 있고 compare_report import라 standalone ModuleNotFoundError(임시 install 실측: tools/엔 check_write_boundary·verify_html_report뿐). **→ 완료**: §5 한 문장을 '런타임 md 점검=SKILL.md 모델 자가점검, verify_report_format.py는 CI/측정용·미배포, HTML/PDF만 tools/verify_html_report.py'로 정정. 도구 tools/ 이동·복사는 미채택(BL-31 거절 방향).
+- **[P2] --deep 추가 정답(HIST-01·DEP-01)을 채점기가 오탐 처리 — 정직한 --deep 보고서가 기본 채점 미달 (scoring E1-4)**. messy EXPECTED는 --deep 정답을 명시하나 compare_report에 --deep 인지 없어 14+2 보고 시 오탐 미달. **→ 완료**: messy EXPECTED '## 추가 보고 허용(채점 중립)'에 HIST-01·DEP-01 2줄 추가. 실측: parse_expected_ids 분모 14 불변, parse_neutral_ids +2, check_scoring_regression 무영향.
+- **[nit] README checkup 행 '진단 카탈로그(35종 ID) 기반'이 기본 검진 적용 범위(22항목)와 어긋남 (positioning E1-3)**. 실측: distinct ID 35 = 기본 22 + [정밀] 8 + SEC/PII/REL 5. **→ 완료**: README:14를 '기본 검진 22항목 기반'으로 교체.
+
+### 기각 (3)
+
+- **HTML 등급원↔판정어 부분문자열 검사 (report-form E1-2) — 함정(TRAP)**. 'D'가 본문 30회 등장(ID·스케일·경로)해 정상·모순 보고서 모두 통과, false-pass 미해결(임시폴더 실측). 진짜 닫으려면 구조 파서(=M-(A) 4회 기각)+픽스처+양방향 테스트 = NEEDS-TDD-FIRST. '가벼운 1줄' 폐기.
+- **run_checks.py에 HTML parity·보안 통합 (report-form E1-3) — ALREADY-REJECTED**. BL-31(BACKLOG:125)에 'run_checks HTML 통합=미채택(YAGNI)'로 명시 기각된 재제안. HTML은 §2 모델 절차 + ci.yml pytest 33테스트로 이미 두 겹 커버.
+- **위치 게이트 세그먼트-블리드 강화 (scoring E1-3) — ALREADY-REJECTED**. BL-22 중간안의 알려진 한계, 강화=BL-17(line93 보류 확정). 청구 본인도 코드 변경 권고 아님 명시.
+
+### 보류 (INTENTIONAL-HOLD / NEEDS-TDD-FIRST, 17 — 중복 병합 후)
+
+- **[BL-05] DOC-04 문서-실체 불일치 ID — 보류 유지(OVERBUILD-GATE)**. 신규 SPEC ID 신설=불변 계약 영향(픽스처+EXPECTED+재측정), '치료 후' 검진이라 외부 0명 위 발동≈0. 트리거: 치료 사이클이 외부 사용자에게 실제로 도는 시점(BL-14).
+- **[BL-14] 외부 사용자 0 + external-corpus 빈 틀 — 보류(INTENTIONAL-HOLD)**. 트리거=외부 사용자 1인 확보. 자작 충전=자기표본편향(교리 ③).
+- **[BL-17] 전면 위치·심각도 채점 — 보류 확정 유지(ALREADY-REJECTED, no-op)**. 근거: 4차=심각도 샘플링 명시 기각(line113), 7차=과잉건축 기각(line135).
+- **DUP-01 vs DUP-02 경계 모호 (catalog E1-2) — NEEDS-TDD-FIRST**. tiebreaker 부재 갭 실재, false-fail 0은 픽스처 없이 불가. 채택: DUP-02 단독 픽스처+EXPECTED+compare 회귀 → catalog 정량 경계 1줄.
+- **BIG-03 들여쓰기 단계 기준점 미정의 (catalog E1-4) — NEEDS-TDD-FIRST**. 파일기준 vs 본문기준 반례 재현, messy 앵커는 양쪽 다 6>4라 미잠금. 채택: 경계 픽스처+EXPECTED 후 catalog:153 1문장 보강.
+- **보관함(archive) 흡수가 DEAD/STALE 침묵 가능 (catalog E1-5) — NEEDS-TDD-FIRST**. archive 픽스처 부재로 경계 미고정(EVALS:26 '미발동' 자인) 실재, 침묵 해석은 과장(:128 흡수 대상은 DUP-01·BIG-01·STRUCT뿐). 채택: archive/ 2케이스+EXPECTED. 처방의 '30% 임계'·'활성 참조 시 DEAD-03'(모순) 제외.
+- **닫히지 않은 skip 태그(`<title>`)면 본문 전체 삼켜 거짓 미달 (report-form E1-6) — NEEDS-TDD-FIRST**. #15 깊이카운터 역방향 취약(`</title>` 결손 시 전수 false-fail). 과엄격이라 false-PASS 구조상 불가=보안 안전. nit.
+- **parity ID 부분문자열 충돌 (report-form E1-5) — INTENTIONAL-HOLD**. 'DUP-01' in 'DUP-010' 버그는 함수 레벨 재현되나 현 카탈로그 2자리라 발동 불가(잠복). docstring 한계 1줄 + 다자릿수 도입과 동시 처리 기록.
+- **골든 HTML이 §2 클리니컬 골격 미준수 (report-form E1-1) — INTENTIONAL-HOLD**. §2 골격 충실 HTML도 두 검증기 동일 통과 실측 — 검증 사각 전제 거짓. 골든=#14 내용 패리티 픽스처. 이모지 미강제=BL-31 의도.
+- **HTML-06/FORM-11 엔티티 인코딩 비밀키 우회 (security E1-2) — INTENTIONAL-HOLD**. `AKIA…&#69;` 통과 실측되나 '모델이 자기 키를 엔티티로 쪼갠다'는 비현실(nit). 코드픽스=과잉건축.
+- **HTML-04 위험URI 단어중간 공백 우회 (security E1-3) — INTENTIONAL-HOLD**. 항해 태그가 ALLOWED_TAGS 밖→HTML-01 선탈락, 구조 태그는 실행 경로 없어 현재 비악용. 처방 '공백 제거'는 'data: 12' false-fail 함정.
+- **release-checklist SEC-01 토큰 패턴 드리프트 (skill-docs E1-2) — INTENTIONAL-HOLD(riskToDetection med)**. CHANGELOG v2.7.6이 의식적 결정으로 추적, 패턴 정렬은 SEC-01 탐지를 바꿔 계약에 묶임. 처방 '{20,}→{22,}'는 21자 github_pat 떨구는 후퇴라 적용 불가.
+- **카탈로그 교차참조·단방향 표기 nit 묶음 (catalog E1-3·E1-6) — INTENTIONAL-HOLD**. 입증 안 된 해악의 문구 nit. 안정 텍스트 보존 차원 보류.
+- **쓰기 경계 심링크 탈출 검사 Windows SKIP (ci E1-2) — INTENTIONAL-HOLD**. CHANGELOG v2.7.6이 'skip' 명시 채택, ubuntu 축 커버. 보강 옵션: mklink /J Windows 전용 케이스. nit.
+- **BL-23 재방문 fallback 강화 — INTENTIONAL-HOLD**. record-format §4.1·§4.7이 이미 '명시적 자동강등'과 동치. 외부 0명이라 손상 표본 없어 실측 불가.
+- **BL-25 ① 공유 유틸 미통합 + ② 종료코드 분리 — INTENTIONAL-HOLD**. ① tools↔tests import 장벽으로 ROI 낮음 ② ==1 단언 테스트 3건 깨짐 반례 재현, CI는 0/비0만 봐서 nit·ROI 음수.
+- **BL-29 한글 본체 파일명 위치 샘플링 — NEEDS-TDD-FIRST**. '보고서초안.md' 미추출 갭 실재하나 순진한 `[\w가-힣]` 치환은 한글 접두 흡수 회귀(실측). 현재 위험 낮음(채점 슬롯 미등장). EVALS:108 고지 명문화됨.
+
+**채택 9건 모두 진단 탐지 로직 불변(문서·테스트·픽스처 정답지·골든 표지·EVALS 산문 한정, compare_report·check_location_sampling·카탈로그 ID·탐지 알고리즘 무변경) → 사용자 프로젝트 검진 회귀 불가능.**
