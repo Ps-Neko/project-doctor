@@ -1,8 +1,0 @@
-# 검증 산출물·캐시 (저장소에 올리지 않음)
-/tests/out/
-__pycache__/
-*.pyc
-.pytest_cache/
-
-# 저장소 루트에 생기는 진료기록부 (자기 검진 시) — 픽스처 안의 .project-doctor는 의도된 표본이므로 루트만 제외
-/.project-doctor/
