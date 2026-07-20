@@ -11,7 +11,7 @@ What is wrong → where to fix it → what to approve first. It only changes wha
 
 ![Sample clinical report (HTML output)](./docs/assets/report-sample.png)
 
-Current version: **v2.7.12** — all modes + returning-patient features (grade trend "May D → today C", treated-area follow-up, one prescription per visit, checkup interval guidance), pre-execution change preview, write-boundary auto check, reports as Markdown / HTML ("clinical" report design) / PDF (auto-converted via your local browser) / Word, plus an HTML report security verifier (allowlist-based tag / external-resource / secret-leak machine checks). Changelog: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · License: [MIT](./LICENSE)
+Current version: **v2.7.12** <!-- 현재 버전: v2.7.12 (machine-readable marker for tests/check_version.py) --> — all modes + returning-patient features (grade trend "May D → today C", treated-area follow-up, one prescription per visit, checkup interval guidance), pre-execution change preview, write-boundary auto check, reports as Markdown / HTML ("clinical" report design) / PDF (auto-converted via your local browser) / Word, plus an HTML report security verifier (allowlist-based tag / external-resource / secret-leak machine checks). Changelog: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · License: [MIT](./LICENSE)
 
 ## What it does
 
