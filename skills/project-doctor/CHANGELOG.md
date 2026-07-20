@@ -1,5 +1,10 @@
 # 변경 이력 (CHANGELOG)
 
+## v2.8.0 — 2026-07-20 (영어 결과지 지원)
+- **[Feature] 영어 결과지 형식 검증 지원**: `verify_report_format.py`가 표지 코드블록의 `Patient:`/`환자:`로 언어를 감지하고, 영어 표지 제목·표지 메타·등급 고정표·절 헤더·`Diagnosis:`·4요소 라벨·`Appendix` 부록 ID 수집을 검증한다. 기계 판독 마커(`비교:` `숙제:` `발견ID:`)와 빈 값 표식 `(없음)`은 한국어 원형 계약을 유지한다.
+- **[Test] 영어 골든 보고서 추가**: 승인된 영어 톤 견본을 `tests/golden/checkup-report-en.md`로 고정하고, 형식 검증·messy 정답지 100% 채점·마커 별칭 거부·KO/EN 구조 parity 회귀 테스트를 추가했다.
+- **[Docs] 버전 정합 갱신**: README·스킬 README·골든 표지·CHANGELOG 최신 항목을 v2.8.0으로 맞추고, checkup 골든에 출하 판정 옵션 줄을 반영했다.
+
 ## v2.7.12 — 2026-06-16 (8차 외부 평가 정합 — 골든·측정 최신화 + HTML 주석 XSS 차단)
 - **[Security] HTML 검사기 허위 종료 주석(`<!-->`) 우회 차단** (verify_html_report.py): `_HtmlAuditor`에 주석 미검사 사각이 있어, `<!-->`(브라우저는 빈 주석을 즉시 닫지만 파이썬 `html.parser`는 뒤따르는 마크업을 주석으로 삼킴)로 `<img onerror=…>` 같은 XSS 페이로드가 통과하던 갭(8차 평가 P1, 실측 재현)을 봉합. `handle_comment`로 주석 DATA의 허용목록 밖 태그(HTML-01)·이벤트 핸들러(HTML-02)를 스캔하고, 보조로 빈 급종료 주석 토큰(`<!---?>`)을 raw 검사. 골격의 정상 주석(`<!-- 재검진이면… -->`)은 false-fail 0. 회귀 테스트 +3. 검사기 한정 — 진단 카탈로그·채점 무변경.
 - **[Fix] 골든 검진 보고서 버전 동결 차단** (check_version.py): 골든 `tests/golden/checkup-report.{md,html}` 표지가 v2.7.7에 4버전 동결돼 있었는데 parity·형식 검증기·E2E 어느 게이트도 'SKILL 대비 stale'를 잡지 못하던 구조적 사각(8차 평가 P0)을 차단 — 버전 정합 검사 대상에 골든 2파일(`스킬 버전:` 마커)을 추가해 'SKILL.md == 골든 표지'를 CI가 강제. 골든 표지·parity 하드코딩을 v2.7.12로 동반 갱신.
