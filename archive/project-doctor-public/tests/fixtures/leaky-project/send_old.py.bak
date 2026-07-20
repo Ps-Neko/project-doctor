@@ -1,0 +1,13 @@
+# 옛 발송 스크립트 (백업) — app.py 로 대체됨
+import csv
+
+
+def send_all(path):
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            print("send to", row["name"])
+
+
+def count_customers(path):
+    with open(path, newline="", encoding="utf-8") as f:
+        return sum(1 for _ in csv.DictReader(f))
