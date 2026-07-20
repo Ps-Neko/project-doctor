@@ -25,6 +25,15 @@ Current version: **v2.8.0** <!-- 현재 버전: v2.8.0 (machine-readable marker 
 
 Every report explains each finding with **"What does it mean? / Where? / If fixed? / Approval command"** in English reports, with the matching plain-language Korean labels in Korean reports.
 
+## Real-world clinical cases
+
+Famous open-source projects, actually checked up — every finding re-verified against the code before publication:
+
+- **[left-pad — the 11 lines that broke the internet](./docs/cases/case3-leftpad.md)** · grade 🟢 B, ✅ ready to ship (English report)
+- **[Moment.js — checkup of a retired giant](./docs/cases/case4-moment.md)** · grade 🔴 D, size guard engaged honestly (English report)
+- **[colors.js — the checkup that walked into a crime scene](./docs/cases/case5-colors.md)** · grade 🟡 C, plus an out-of-catalog caution on the 2022 sabotage code (English report)
+- [Reactor project — a real D→C treatment story](./docs/cases/case1-reactor.md) (Korean) · [request — autopsy of an npm legend](./docs/cases/case2-request.md) (Korean)
+
 ## Before you use it (required disclosure)
 
 1. **Your project content is sent to Claude (Anthropic) servers** — that is how Claude Code works. Check your company's AI policy before running this on confidential code.
