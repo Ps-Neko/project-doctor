@@ -1,0 +1,183 @@
+# 백로그 (개선 후보)
+
+> 이 문서는 **비공개 개발 저장소(project-doctor-dev)에만** 둔다. 공개 배포본에는 포함하지 않는다.
+> 실사용·사례 제작·외부 의견 대조에서 나온 개선 후보를 모은다. 채택 시 SPEC/CHANGELOG로 승격하고 여기서는 "→ vX.Y 반영"으로 표시.
+
+## A. 카탈로그/검진 일관성 (사례 제작 = 개밥먹기 수확, 2026-06-12)
+
+리액터 사례(D1)에서 같은 환자를 신선한 검진자 5명이 검진했을 때 발견 건수가 7→7→4→3→3으로 매회 달랐다. 큰 발견은 일치했으나 잔잔한 항목이 흔들렸다. 원인과 후보:
+
+- **[BL-01] HARD-02 범위 정의 부재** — **→ 완료 (공개판 v1.6.0 / dev v2.6.0)**. 탐지 기준 명확화: 대상(요율·한도·임계 등 비즈니스/설정 값) vs 제외(0·1·-1, 배열 인덱스, 화면 좌표·크기·여백 등 구조적 수치). **검증**: 강화 후 신선 검진자 3명 재측정 — 전원 동일 판단(messy의 50000·0.05를 DUP-01로 흡수)·탐지율 100% 일관(이전엔 검진자마다 매직 넘버 꼬리 흔들림). 픽스처·정답지 무변경.
+- **[BL-02] HARD-02⊂DUP-01 묶음 규칙 공개판 미반영** — **→ 완료 (공개판 v1.6.0)**. dev v2.0의 흡수 규칙("중복 블록이 원인이면 DUP-01로 흡수")을 공개판 카탈로그에 이식. BL-01과 함께 처리.
+- **[BL-03] archive/ 보관함 재오진** — **→ 완료 (v1.7.0/v2.7.0)**: TMP-01에 "보관함 흡수" 규칙 — 정리용 폴더(archive/old/backup)에 모인 사본은 TMP-01 1회 보고 + 내부 DUP-01/BIG-01 등 중복 집계 제외(비밀키·개인정보는 예외). 자동 제외가 아니라 "TMP-01로 보고하되 흡수"라 진짜 문제 숨김 방지.
+- **[BL-04] TMP-01 글롭이 버전 사본 패턴 미커버** — **→ 완료 (v1.7.0/v2.7.0)**: "버전 사본 더미"(같은 이름+버전 번호 3개 이상) 묶음 탐지 추가. messy 회귀 100% 유지(해당 케이스 있을 때만 작동).
+- **[BL-05] 문서-실체 불일치 ID 부재** — 치료(파일 이동/삭제)가 README의 안내를 죽은 문서로 만들 수 있는데(리액터에서 archive 안내 잔존), 이를 잡는 카탈로그 항목이 없음. → `DOC-04 문서가 가리키는 경로/파일이 실재하지 않음` 신설 검토. **미완 — ID 인벤토리 신설은 SPEC ID 불변 계약 영향 + 픽스처에 케이스 심기·정답지·재측정 동반하는 별도 사이클**(BL-01~04와 달리 기존 항목 보강이 아님).
+
+## B. release-check 확장 (사례에서 관찰)
+
+- **[BL-06] settings.local.json 광역 권한·git 추적** — **→ 완료 (v1.7.0/v2.7.0)**: release-checklist 기본 재확인 항목에 도구 설정 파일(.claude/settings.local.json 등) 개인 경로(HARD-01에 묶음) + 광역 권한(`Read(//c//**)`)·git 추적 점검 추가. ID 신설 없이 기존 HARD-01 맥락으로 흡수.
+
+## C. GPT 외부 의견 대조 잔여 (2026-06-12, 미구현 델타)
+
+GPT가 공개판만 보고 제안한 22건 중 16건은 이미 구현(다수 초과 구현). 미구현 6건의 처분:
+
+- **[BL-07] D1 처방 사전 diff 미리보기** — 조건부 후보(환자가 승인 부담을 보일 때). → **v2.2.0에서 이미 채택·구현됨.** (이 항목 종료)
+- **[BL-08] ID별 처방 레시피(표준 수정 템플릿)** — 보류. 처방 자동화는 "고치면?"의 자유 서술과 충돌 가능, 신중.
+- **[BL-09] HANDOVER 표준 양식** — 보류. intro 소견서와 중복 여지, 수요 확인 후.
+- **[BL-10] ARCHITECTURE.md 상주 문서 생성** — 보류. 읽기 전용 철학과 "상주 산출물"이 긴장, 처방전 경유라면 가능.
+- **[BL-11] 실행 검증 RUNBOOK** — **기각 권장.** 읽기 전용 진단 철학과 충돌.
+- **[BL-12] Top3 우선순위 목록** — **기각 권장.** "오늘의 처방 = 당장 1건"의 압도 방지 철학과 충돌.
+
+## D. 운영 이슈
+
+- **[BL-13] 회사 MIP가 픽스처 CSV를 자동 암호화** — 회사 정보보호 정책(iljin.co.kr MIP)이 작업 폴더의 `.csv`를 `.csv.pfile`로 상시 암호화. 픽스처 데이터 손실은 git 복원으로 막지만 재발. → 작업 폴더를 정책 예외로 빼거나, 픽스처를 비대상 확장자로 두는 방안 검토. (제품 결함 아님 — 환경 이슈)
+
+## 미해결 완성 기준 (SPEC)
+
+- **[BL-14] S7+ 동료 1인 실사용** — 완성 기준 6·7의 최종 체크오프 조건. 현재 잠정 통과, 실제 타인 사용자 0. 후보 부재. Show GN 게시(D4)가 이 후보를 만들 가장 유력한 경로. **2026-06-13: 외부 검증 코퍼스 틀 마련** — `tests/external-corpus/`(README 수집·익명화·라벨링 절차 + `_TEMPLATE/EXPECTED.md`·`NOTES.md` + 타인 코드 비커밋 `.gitignore`). 외부 사용자가 생기면 그 프로젝트(익명)로 채워 내부 픽스처와 점수 격차를 측정 — 외부 평가가 짚은 'n=1·자기 프로젝트' 공백의 그릇. (정답지 라벨링은 실제 외부 프로젝트 확보 후, BL-14 본체와 함께)
+
+## E. 신뢰도 인프라 (2026-06-12 외부 코드리뷰 반영, B 묶음)
+
+> 외부 리뷰(공개판 v1.4.0 정적 검토, 종합 7.3/10)가 짚은 약점 중 양쪽(dev·공개판) 다 미구현인 것들. A 묶음(채점기 오탐 게이트·README 정합)은 v1.4.1로 즉시 반영 완료. 아래는 노출 1라운드(외부 반응 측정)와 무관한 인프라라 게시 후 트랙.
+
+- **[BL-15] CI (GitHub Actions)** — **→ 완료 (2026-06-12)**. `.github/workflows/ci.yml`: pytest + 자체 픽스처 채점 회귀(정답지→100%·오탐0) + 문서 링크 검사. 외부 의존성 0, 공개 레포 첫 실행 4 step 전부 통과(run 27400174762). README에 CI 배지. 공개판·dev 동기화(automation-main은 git 아님 — 스크립트만).
+- **[BL-16] E2E 회귀 러너** — **→ 부분 완료 (2026-06-12)**. `tests/run_checks.py`: 보고서 1건을 채점기+형식검증기로 한 번에 검사하는 묶음 러너(산출물 검증). **미완 잔여**: 검진(Claude 실행)→보고서 저장→해시 비교(읽기전용)→기록부 생성 확인의 '검진 단계 자동화'는 모델 행동 의존이라 미해결 — 현재는 신선 드라이런으로 대체 중.
+- **[BL-17] 위치·심각도 채점** — 현재 채점은 ID recall + 오탐 0(v1.4.1). 위치(file:line)·심각도 정확성은 미채점이라 "같은 ID를 엉뚱한 위치에서 발견"해도 통과. EXPECTED에 `severity`·`file`·`line/range` 컬럼 추가하고 보고서 기계 판독 블록도 확장하는 안. **트레이드오프**: 보고서 4요소의 자유 서술과 충돌 가능 — 위치는 별도 기계 줄로 빼는 설계 검토.
+- **[BL-18] 처방 실행 스크립트 강제** — **→ 부분 완료 (2026-06-12, 공개판 v1.5.0 / dev v2.5.0)**. `tools/check_write_boundary.py`: 변경 예정 경로가 프로젝트 밖(절대경로·`../`)이면 비0 종료. 스킬과 함께 설치, prescription-protocol 0장 4번에 호출 안내, 단위 테스트 7건+CI. **미완 잔여**: "변경 예정 파일만 diff에 포함되는지", "백업 생성·복원 검증", "secret 값 출력 방지(현재 verify가 보고서에서만 검사)"는 미구현 — 쓰기 경계만 자동화. 완전 강제는 불가(치료도 모델 행동) — 도구는 보조.
+
+## H. 2차 외부 리뷰 처방 (2026-06-12, dev v2.5.0 정적 검토, 종합 8.1/10)
+
+> 1·2순위(버전 정합·README 100% 문구)는 즉시 교정 완료(루트 README v2.4.0→v2.5.0, "내부 표본 기준" 앞붙임 — 직전 v2.5.0 작업 누락분). 아래는 게시 후 트랙. 사용자 결정(2026-06-12): "바로 게시" — 게시 전엔 미적용.
+
+- **[BL-20] 버전 단일 출처** — **→ 완료 (2026-06-12)**. `tests/check_version.py`: SKILL.md를 단일 진실로 보고 루트 README·스킬 README·CHANGELOG 최신이 모두 일치하는지 검사, 불일치 시 CI 실패. VERSION 파일 신설 대신 기존 "SKILL.md가 단일출처" 계약 유지(더 단순). CI에 step 추가 — 오늘 루트 README 드리프트가 이 검사였으면 즉시 잡혔을 것. 공개판·dev 둘 다 v1.5.0/v2.5.0 정합 확인. **잔여**: report-template 상태 문구(v2.1.0=양식 확정 연혁)는 버전 검사 대상서 제외(별개 의미) — 추후 필요 시 정리.
+- **[BL-21] CI Windows 축 추가** — **→ 완료 (2026-06-12)**. ci.yml을 matrix `[ubuntu-latest, windows-latest]`로 재구성, **양축 CI 통과 실증**(run 27402435017: windows·ubuntu 모두 success). `check_write_boundary.py` 절대경로 판정이 Windows에서도 정상 동작 확인. 부수 작업: 채점 회귀를 bash heredoc → `tests/check_scoring_regression.py`(OS 무관)로 분리해야 Windows 러너에서 동작.
+- **[BL-22] 위치 정확도 샘플링 게이트** — **→ 완료 (2026-06-13, dev)**. `tests/check_location_sampling.py`: EXPECTED '## 심은 문제' 표 상위 5개 ID에 대해, 보고서의 해당 발견 구간에 정답지 위치 셀의 기대 파일명이 등장하는지 확인(ID는 맞는데 엉뚱한 파일을 가리키는 위치 오진 방어). 보고서 자유 서술은 강제 안 함(파일명 등장만 확인). `run_checks.py`에 `[3/3]`로 통합(정답지 있을 때만 작동 → 실사용 보고서 false-fail 없음), pytest 7건, golden E2E·CI 자동 포함. ⚠️ 파이썬 `\w`가 한글 포함이라 "utils.py의"처럼 확장자에 한글이 붙으면 추출 실패하던 것을 ASCII 클래스+영숫자-아님 lookahead 로 수정(테스트로 회귀 고정). BL-17(전면 위치·심각도 채점) 전면 보류는 유지 — 이건 그 가벼운 중간안.
+- **[BL-23] 재방문 fallback 강화** — 리뷰어 5순위. 기록부 손상·구버전 필드 부재 시 조용한 생략 규칙은 있으나(record-format), 기록 파싱이 애매할 때 "기본 checkup 보고서로 자동 강등"하는 명시적 fallback을 더 강하게.
+
+## I. 3차 코드 리뷰 (2026-06-12, 다중 에이전트 5축 적대 리뷰 + 검증자 실측 재현)
+
+> code-review-and-quality 스킬로 이번 세션 신규 코드 7개를 3관점(정확성·보안·아키텍처) 병렬 리뷰 후, Critical/Required를 검증 에이전트가 실제 입력으로 재현. 검증된 8건 즉시 수정 → **공개판 v1.5.1 / dev v2.5.1** 배포.
+
+**→ 수정 완료 (v1.5.1/v2.5.1):**
+- [Critical] check_write_boundary: `C:foo`(드라이브 상대경로)·UNC 경계 우회 — 거부 + TOCTOU 문서화·해석경로 출력 + 빈경로 거부. Windows 실측 재현됐던 것
+- check_write_boundary: 심링크/정션 TOCTOU — 완전 차단은 불가(검사≠쓰기)라 한계 문서화 + 통과 시 canonical 경로 출력으로 완화
+- compare_report: cp949 트레이스백 → errors=replace
+- check_scoring_regression: tempfile화 + parse_expected_ids 재사용(가드-채점기 단일화) + 분모 출력
+- check_version: 버전 깨짐 실패 집계 + 단어경계
+- check_links: title·쿼리 분리
+
+**→ 미반영 (Optional/Nit, 비긴급 — BL-25로 묶음):**
+- **[BL-25] 코드 위생 정리** — **③④⑤ 완료 (v1.5.3/v2.5.3)**: 이모지 `✓` 제거(check_links·run_checks), check_links 이미지/펜스 제외+단위테스트 6건, docstring BL 번호 역할 명시. **잔여 ①②**: ① 공유 유틸 `_common.py`(stdout reconfigure·read_lines·ID 정규식 중복) — ROI 낮음(작은 파일들 + check_write_boundary는 skills/tools라 tests/_common import 불가로 부분 통일만 됨) ② 종료코드 분리(사용법 2 vs 미달 1) — 테스트 다수가 ==1 단언이라 깨짐 위험 + Nit. 둘 다 보류.
+
+## J. 4차 전체 코드 리뷰 (2026-06-12, verify·compare 채점기 집중)
+
+> code-review "전체 코드". 직전 미검토였던 verify_report_format.py(가장 복잡한 파서) + compare_report.py 전체 + 테스트 품질을 3관점 적대 리뷰 → 검증자 실측 재현. 검증된 결함 전부 수정 → **공개판 v1.5.2 / dev v2.5.2**.
+
+**→ 수정 완료 (v1.5.2/v2.5.2):**
+- [Critical] verify check_grade: 코드펜스 안 예시 등급줄이 펜스 밖 실제 위반을 가림 → 펜스 제외 + 전수 검사
+- verify SECRET_PATTERNS: GitHub 가변길이·gho/ghs/github_pat·Google AIza·줄바꿈 PEM 추가(거짓음성 축소)
+- verify check_four_fields: 전역 substring → 발견 항목별 검사(거짓양·음성 제거), 발견ID:(없음)↔본문 발견 모순 검출(machine_ok일 때만)
+- verify read_text errors=replace(cp949), detect_major_version 표지 한정
+- verify/compare 발견ID 블록: verify는 여러 개면 FORM-05, compare는 펜스 예시 제외(불일치 해소)
+- compare parse_expected_ids: 전각파이프·백틱·공백헤더·2표 리셋·GUID 정확매칭·절 진입 정확화
+- compare parse_neutral_ids: ISO-8601 등 비-ID 토큰 앞서도 카탈로그 접두사 우선
+- 회귀 테스트 +17(총 50)
+
+**→ 발견했으나 별도 (BL):**
+- **[BL-26] DEMO.md가 verify 미달(FORM-05)** — **→ 완료 (공개판 v1.5.3)**: "## 이 다음은?" 절을 발견ID 앞으로 옮겨 발견ID를 맨 마지막 줄로. 이제 공개판 DEMO가 verify FORM-05 통과(0건). 계약(발견ID 맨 마지막)을 약화시키지 않고 데모를 계약 준수하게 한 쪽 선택.
+- **[BL-27] dev DEMO.md가 구식 양식(v1.0.0 "진단 보고서")** — **→ 완료 (2026-06-13, dev)**: dev DEMO를 **v2.7.1 결과지 양식**으로 전면 재작성(표지 `# 🏥 …결과지`·종합 판정 등급 줄·부위별 소견·오늘의 처방·숙제 줄·발견ID 맨 마지막 줄). 형식 검증기 위반 0 + 채점기 14/14·오탐 0 동시 통과(`run_checks.py`)로 객관 확인. "이 다음은?" 해설을 발견ID 앞으로 옮겨 발견ID를 파일 마지막 줄로(BL-26 공개판과 동일 패턴). static_data.js 줄 수도 실측값(1,011줄)으로 보정. 동시에 EVALS checkup 표에 v2.7.1 행 + v2.5~v2.7.1 탐지 무영향 분석 추가(외부 리뷰 1순위 2건 동반 처리).
+- 미수정 Optional 잔여(reviews에만): check_grade 외 일부 startswith 일관성 등은 영향 경미, BL-25에 흡수.
+
+## G. 보류 결정 (2026-06-12)
+
+- **[BL-17] 위치·심각도 채점 — 보류 확정.** ID recall + 오탐 0 게이트로 핵심은 잡히고, 위치(파일:줄)는 4요소의 "어디?"에 적혀 사람이 본문에서 확인. 자동 위치 채점은 보고서 계약(4요소 자유 서술)을 무겁게 만드는 트레이드오프 대비 이득이 작다는 판단. 외부 코퍼스 검증(BL 외) 단계에서 재고.
+
+## F. 운영 교훈
+
+- **[BL-19] gmail author 재유입** — **→ 근본 차단 완료 (2026-06-13)**. GitHub 웹/API squash 머지는 PR 커밋 author를 계정 기본 이메일(gmail, 공개)로 다시 박았다(2026-06-12 PR#7, 2026-06-13 PR#2 재발). **ⓐ 정착**: 사용자가 GitHub 계정 이메일을 **비공개로 전환** — `gh api user --jq .email` = null 확인. 이제 web/API 머지도 noreply(`...@users.noreply.github.com`)로 박힌다. **ⓑ 병행**: dev 머지를 로컬 noreply 커밋+push로 수행하는 관행. **과거 노출분 회수**: 2026-06-13 main 전체 36커밋의 gmail author 1건(#2 머지)+committer 13건(과거 `dora`)을 filter-branch+`--force-with-lease`로 noreply 치환(tree 무결성·CI green 확인, main 해시 재작성 HEAD=`d4f703f`). 옛 커밋 해시 전부 무효 — 타 클론은 `reset --hard origin/main` 필요. (이 항목 종료)
+
+## K. 3차 외부 평가 반영 (2026-06-13, 다중 에이전트 검증)
+
+> 외부 평가(종합 8.0/10, PASS_WITH_WARNINGS)를 5영역(구조·카탈로그/평가채점/안전보안/CI·한계/개선제안) 코드 대조 검증 — 사실 진술은 사실상 전부 정확(오히려 보수적). 개선 제안 중 '이미 됨/의도적 보류'를 걸러내고 실효 항목만 반영.
+
+- **[BL-28] 설치 자동화 스크립트** — **→ 완료 (2026-06-13, dev)**. `install.ps1`(UTF-8 BOM — PS5.1 한글/정규식 정확 판독, `-Check` 점검 모드, SKILL.md 버전 추출 + 설치 후 인식 확인)·`install.sh`(LF·`--check`)·`.gitattributes`(`*.sh eol=lf`). README 설치 절을 자동 스크립트 우선으로 갱신(수동은 `<details>`로 보존). 비개발자 설치 마찰 제거(외부 평가 P2). `install.ps1 -Check` 실측 통과(v2.7.2 인식, exit 0). **2026-06-14 후속(외부 제품평가 P0) — install.ps1 clean install 정합**: install.sh는 `rm -rf "$DST"` 후 복사라 재설치가 깨끗한데 install.ps1은 merge-only(`Copy-Item -Recurse -Force`)라 업데이트 시 **윈도우만** 사라진/개명된 참조 문서가 stale로 잔존할 위험 → Copy 전 `if (Test-Path $Dst) { Remove-Item -Recurse -Force $Dst }` 추가로 install.sh와 동작 일치($DstRoot 아닌 $Dst만 삭제). 수동 설치 안내(README `<details>`·SPEC)에 '업데이트 시 폴더 먼저 삭제' 주석, README 필수 고지에 '정적 분석기 아님(모델/프로젝트 구조 따라 결과 달라짐)' 4번 항목 추가. (.pyc stale 주장은 거짓양성 — `__pycache__`·`*.pyc`는 이미 .gitignore라 비추적.)
+- **BL-22**(위치 샘플링 게이트)·**BL-14**(외부 코퍼스 틀)도 이 라운드에서 처리 — 각 항목 참조.
+- **반영 안 함 (검증이 역효과/완료로 판정)**: ① P0 hook 강제(보고서 생성 후 검사기 자동 호출·파일쓰기 직전 hook) — 본질이 모델 행동 의존이라 hook 을 걸어도 우회 가능하고, '결정적 게이트가 아니라 승인 기반 진단 하네스'라는 정직한 포지셔닝과 충돌. BL-16/18 의 '완전 강제 불가' 한계 고지를 유지하는 편이 정합적. ② '자동 점검 통과 → known-pattern pass' 표현 완화 — 이미 `release-checklist.md`에 '알려진 패턴만 검사' 한계 고지가 표준 형식에 포함(외부 평가가 최신 상태를 못 봄).
+
+## L. 4차 외부 평가 (2026-06-14, v2.7.3 상태, 종합 8.6/10 · PASS_WITH_WARNINGS)
+
+> v2.7.3(FORM-12 + BL-22 위치 샘플링) 상태 재평가. 4에이전트 경험검증(정규식 직접 실행·`run_checks` 실행·README 대조)으로 권고 5개를 코드 대조 후 선별. 사실 주장은 또 정확(run_checks 3단·위치샘플링 상위5/ASCII·EVALS v2.7.1 stale 전부 확인). **채택 = P0(EVALS 최신화) + BL-30(내부 README) 둘뿐.**
+
+- **[BL-29] 위치 샘플링 한글 본체 파일명 미지원 — 보류(채택 시 TDD 선행)**. 갭은 실재: 현재 `FILENAME_RE`(ASCII 본체 `[A-Za-z0-9_./\-]+`)는 `보고서초안.md`를 추출 못 함(직접 실행 `findall()==[]` 확인). 단 **평가 제안 `[\w가-힣...]` 치환은 채택 불가** — 동일 실행에서 두 회귀 실측: ① `config.json`→`config.js`(확장자 alternation `js`<`json` 순서 + 우측경계 부재) ② `이파일은utils.py를`→`이파일은utils.py`(한글 접두 흡수, lookahead로 못 고침 — 현 ASCII본체 설계가 의식적으로 막던 케이스 회귀). 현 설계는 "한글 조사(`utils.py의`) 견딤 + 한글 본체 포기"의 의도적 trade-off(주석 줄32-34). **채택 조건**: (a) 확장자 긴것-우선/우측 lookahead 경계, (b) 한글-ASCII 좌측 경계(별도 설계), (c) EXPECTED에 한글본체·조사붙은·`.json`/`.js` 인접 fixture. **현재 위험 낮음**: 한글 본체 파일명은 EXPECTED 파일목록에만·채점 발견엔 미등장(활성 실패 0). BL-17 보류와 정합 — 수요 신호 전 보류.
+- **[BL-30] 내부 README 설치법 정합 — → 완료 (2026-06-14)**. `skills/project-doctor/README.md`가 수동 `Copy-Item`만 안내 + "automation-main" 옛 레포명 잔재였음. 루트 install 스크립트(`install.ps1`/`install.sh`) 권장으로 전환하되, 스크립트는 레포 루트 전용이라 '스킬 폴더만 받은 사용자'용 수동법을 `<details>` fallback으로 보존, 이름 'project-doctor'로 정정. 루트 README와 설치 흐름 정합.
+- **반영 안 함(검증이 과장/완료로 판정)**: ① release-check 문구 완화 — 면책(알려진 패턴 한정·보안/법적 범위 밖·최종 책임)이 이미 README·release-checklist 표준에 포함(K 묶음 ②와 동일 재권고, 거짓양성). ② 심각도 샘플링 — BL-17(전면 위치+심각도)이 이미 보류 확정(G 묶음), BL-22가 그 중간안. 외부 0명 위 새 채점 축 = 과잉건축, 보류 유지.
+- **P0 EVALS 최신화 — → 완료 (2026-06-14)**: EVALS가 코드(v2.7.3)보다 2버전 stale → 새 측정이 아닌 "CI 게이트 통과 기록"으로 v2.7.2~v2.7.3 행 + 탐지 영향 분석 v2.7.3 연장 + 위치샘플링 한계 명시(골든 E2E 형식0·채점14/14·오탐0·위치5/5, 직접 `run_checks` 실행 확인). 버전정합·링크 green, 코드변경0·버전 bump 없음.
+
+## M. HTML/PDF 보안 검증기 갭 (2026-06-14, 검토 → 빌드 완료 v2.7.8)
+
+> 세션 시작 시 뜬 재평가(8.8→9.0)가 "다음 #1 = HTML/PDF 렌더러 코드화"로 지목. `report-formats.md`·백로그 코드 대조 후 검토 → **렌더러(A)는 기각 유지, 검증기(B)는 트리거 조건부 보류**로 적었으나, 같은 날 사용자가 트리거 전 빌드를 명시 결정 → **(B) v2.7.8로 구현·머지 완료**(A는 기각 유지).
+
+- **[BL-31] HTML/PDF 보안 검증기 — → 완료 (v2.7.8, 2026-06-14, dev main `3494c0f`)**. 갭은 실재이고 문서가 자인함: HTML/PDF는 코드가 아니라 모델이 `report-formats.md` 골격을 보고 직접 작성하고, 신뢰불가 값(분석 대상 파일명·코드 조각·소견) 이스케이프는 **프롬프트 규칙**(§2 절대 준수, 공격 예시 `</style><img onerror=…>.py` 명시)일 뿐 코드 강제가 아님. `.md`엔 형식검증기(`verify_report_format.py` FORM-11)가 완성본을 자동 검사하는데 **HTML/PDF는 검사 대상 밖**(§5가 "사람(Claude)이 직접 대조"라고 자인) — 이 **비대칭**이 핵심 갭.
+  - **두 선택지 분리**(재평가는 "렌더러 또는 검증기"로 뭉뚱그렸으나 비용·철학이 다름):
+    - **(A) 결정적 렌더러** = 코드가 보고서 데이터→HTML 생성, 이스케이프를 단일 chokepoint에 내장. **기각 유지** — "결정적 게이트가 아니라 승인 기반 진단 하네스" 포지셔닝과 충돌(K묶음 P0 hook 기각·BL-16/18 '완전 강제 불가, 도구는 보조'와 동일 철학). 비개발자 개인 도구의 드문 옵션 경로에 과한 코드. (HTML 렌더러 = 이로써 3번째 기각.)
+    - **(B) HTML 검증기**(`verify_html_report.py`, HTML판 FORM-11) = 모델이 쓰는 건 그대로 두고, 완성된 `.html`을 스캔해 `<script>`·외부 리소스(CDN·웹폰트·외부 이미지)·미이스케이프 신뢰불가 텍스트가 있으면 비0 종료. 기존 검사 패턴(`check_write_boundary`·`verify_report_format`)과 동일한 **추가 검사**라 철학 일관 — `.md`엔 이미 있는 검사를 HTML에 복제해 §5의 "사람이 직접 대조"를 코드화. **할 만한 유일한 선택지지만 지금은 보류**: 외부 사용자 0명(BL-14) 위 새 검사 축은 백로그가 반복 보류해 온 "과잉건축" 패턴(BL-17·심각도 샘플링과 동일 논리), HTML/PDF는 옵션·드물게 쓰임, 위협(악성 파일명)은 **남의 신뢰불가 레포를 HTML/PDF로 뽑을 때** 현실화되는데 현 용도는 본인이 본인 프로젝트를 진단.
+  - **채택(B 빌드) 트리거**(원안): ① HTML/PDF 내보내기를 외부/신뢰불가 제3자 레포에 실제로 쓰기 시작, ② 또는 외부 사용자 수요 신호(BL-14 충족).
+  - **→ 빌드 결과 (v2.7.8)**: 사용자가 트리거 전 빌드를 결정 → brainstorming→writing-plans→subagent-driven TDD로 구현. `skills/project-doctor/tools/verify_html_report.py`(html.parser·stdlib·의존성 0): HTML-01 허용목록 밖 태그·HTML-02 이벤트 핸들러·HTML-03 외부 리소스(CSS @import/url·**인라인 style·meta refresh** — 코드리뷰가 잡은 우회 2건 포함)·HTML-04 위험 URI·HTML-05 charset 부재·HTML-06 비밀키 값. 비밀키 패턴은 `verify_report_format`과 동기화(단위 테스트 고정). `report-formats.md` §2(생성 후 호출)·§5(코드 검사) 반영. 골든+악성 16테스트, 전체 100 passed/2 skipped, CI 게이트 green. **(A) 결정적 렌더러·`run_checks.py` HTML 통합·PDF 파서는 미채택(YAGNI 유지)** — 검증기는 사후 검사이지 완전강제가 아님을 docstring·문서에 명시. 설계/계획: `docs/superpowers/{specs,plans}/2026-06-14-html-report-verifier*.md`.
+
+## N. 7차 외부 평가 (2026-06-14, v2.7.8 상태, 종합 8.1/10)
+
+> v2.7.8(HTML 검증기 빌드 직후) 상태 재평가. 8-에이전트 워크플로로 7개 주장을 **관찰 코드대조 + 처방 적대실행검증**(PowerShell/python 실측). 사실 주장은 또 대체로 정확하나 처방 2건이 함정(P0 PowerShell 중첩 버그·P1b 강제 불가). **채택 4 = P0(수정형)·P1a·P2a·P2b-timeout. 기각 3 + 보류 1(BL-32).** 채택 4건 모두 진단 탐지 로직 불변 → 사용자 프로젝트 검진 회귀 불가능.
+
+- **[P1a] HTML 검사기 CSS url() 전면금지 — → 완료 (v2.7.9)**. `CSS_URL_EXTERNAL_RE`(스킴 한정 https/ftp(s)/`//`)가 `url(file:·data:·blob:·behavior:)`를 놓치던 갭 실재(후보 정규식 실측 cur=False). **처방 SAFE**: report-formats.md §2 골격이 url()을 0건 쓰고(grep) 외부·인라인 리소스를 금지하므로 `url(` 전면금지가 false-fail 0(샌드박스 16테스트 green). `CSS_URL_RE = re.compile(r"(?i)url\(")`로 교체, 인라인 `style=`·`<style>` 양 경로 동시 적용. 회귀 +4(file/data/blob/inline-file). 골격이 언젠가 url()을 쓰면 같은 작업에서 갱신(골격 결합).
+- **[P2a] 버전 줄 통째 삭제 차단 — → 완료 (v2.7.9)**. `check_version.py` main()이 MISSING(마커/파일 부재)을 '건너뜀'으로만 처리해 핵심문서에서 버전 줄을 지우면 CI exit 0(false-pass 실측: 시나리오 B/C 현행=0·제안=1, 정상 A 양쪽=0, 불일치 D 양쪽=1). main()의 MISSING 분기만 실패 집계로 전환(find_version 불변 → 단위 6테스트 유지). 회귀 +2(main).
+- **[BL-32] CI 공급망 재현성(P2b)** — **timeout만 채택(v2.7.9), SHA pinning 기각, pytest 고정 보류**. ① `timeout-minutes: 10`: 1줄·무위험·무한루프 러너 점유 방어 → 채택. ② 액션 SHA pinning **기각**: `permissions: contents: read`뿐이라 침해 blast radius=소스 읽기+러너 CPU(레포 변조·릴리스 오염 불가), Dependabot 부재 + 수동 태그 bump 선례(`71d9dcf`)라 SHA 고정은 보안 패치 자동 유입 차단(stale SHA)+bump마다 수동 조회 마찰 = n≈1 과잉건축. ③ pytest 버전 고정 **보류**: 보안 아닌 안정성, 테스트는 stdlib만, pip도 미고정이라 반쪽 조치 — CI red 발생 시 재고.
+- **[P0] BL-30 수동설치 명령 자기모순 — → 완료 (v2.7.9)**. BL-30(4차)에서 만든 `<details>` 수동설치 fallback이 summary는 "이 스킬 폴더만 받았을 때"인데 명령은 `skills/project-doctor` 상대경로를 복사 → 스킬 폴더만 받은 사용자에겐 그 경로가 없어 실패(git blame: summary `a04b71c5` 갱신 vs 명령 `0e8bcc4` 잔존 = 문구만 고치고 본문 미수정). install.ps1/sh가 그 폴더만 배포하므로 "스킬 폴더만" 시나리오는 실재. **평가 처방은 함정**: `Copy-Item -Recurse -Force . dest`는 PS5.1에서 `dest`가 이미 있으면 1단계 중첩 복사(`project-doctor/project-doctor/SKILL.md`)→스킬 미인식(실측 재현). `.\*` 와일드카드로 교정(평탄 복사·실측), bash `cp -r . dest`는 OS 비대칭으로 함정 없음.
+- **반영 안 함(기각)**: ① **P1b HTML 임시파일→atomic move — 기각**: `verify_html_report.py`는 읽기전용 검사기(docstring "어떤 파일도 만들거나 고치지 않는다")라 수행도 안 하는 move를 강제 불가, HTML은 모델이 씀 = BL-16/18 '완전 강제 불가' 부류. 관찰도 과장(현 §2 절차가 이미 위반 시 저장 중단). ② **외부 코퍼스 3개+점수격차표 — 기각(=BL-14)**: 틀(`tests/external-corpus/`)·채점 경로(`run_checks` 실측 작동)·EVALS 한계 고지 이미 존재, 빈 건 외부 사용자 0(수요 게이트). 외부 0명에서 자작 충전 = 자기표본편향 재생산으로 측정 목적 무효(README.md:9-11이 그 위험 경고). ③ **대문제① '결정적 실행기 아님' — 기각(= M-(A) 4번째)**: 설계상 모델구동(승인 기반 진단 하네스)+EVALS 자인, `tools/`엔 읽기전용 검사기만(실행 엔진 부재가 의도). 규칙엔진화 = 신규 패턴 탐지 상실 + 포지셔닝 충돌. M-(A) 3번째 기각에 이어 4번째.
+
+## O. 8차 외부 평가 (2026-06-16, v2.7.11 상태, 종합 8.4/10 · PASS_WITH_WARNINGS)
+
+> v2.7.11(+PR#15) 상태 재평가. 8개 영역(catalog·scoring·security·ci·skill-docs·report-form·positioning·backlog-open) 평가자가 26건 제기, 적대 검증자가 **관찰 코드대조 + 처방 적대실행검증**(python/git-bash 실측, 저장소 무수정·임시폴더)로 전건 재현. 사실 주장은 또 대체로 정확(claimAccuracy FALSE 0건). 처방 1건이 함정(report-form E1-2 등급원↔라벨 부분문자열 검사 — 'D'가 본문 30회 등장해 모순 미검출). **채택 9 + 기각 3 + 보류 17(중복 병합 후).** 채택 9건 모두 진단 탐지 로직 불변(문서·테스트·픽스처·정답지·골든 표지·EVALS 산문 한정) → 사용자 프로젝트 검진 회귀 불가능.
+>
+> **→ 구현·검증 완료 (v2.7.12, 2026-06-16):** 사용자 승인 하에 채택 9건 전부 구현. 로컬 pytest(전건)·check_version·run_checks(messy/leaky 골든 3단)·HTML 차단 실측 통과. CHANGELOG v2.7.12 · 골든/버전 마커 v2.7.12 정합.
+
+### 채택 (→ v2.7.12 구현 완료)
+
+- **[P0] 골든 검진 보고서가 v2.7.7에 동결 — CI 어느 게이트도 못 잡음 (scoring/ci 병합)**. 골든 `tests/golden/checkup-report.{md,html}`가 'v2.7.7'인데 SKILL.md=v2.7.11(4패치 뒤짐). `check_version.py`는 README·CHANGELOG만, `verify_report_format`은 '존재+주버전'만, parity는 두 골든 상호 일치만 봐서 stale 미검출(114 passed인데도 구조적 동결). `test_html_md_parity.py:49·52`가 'v2.7.7' 하드코딩이라 한쪽만 바꾸면 `test_missing_version_detected` FAIL(결합 실측). **→ 완료**: 골든 2파일·parity 하드코딩 2곳·전 버전 마커를 v2.7.12로 동반 갱신 + `check_version.py` 검사 리스트에 골든 2파일('스킬 버전:' 마커) 추가('골든 표지==SKILL 버전' CI 강제). 실측 stale=exit1·fixed=exit0.
+- **[P1] EVALS가 코드(v2.7.11)보다 stale — 마지막 측정행 v2.7.8 (scoring/FRESH-EVALS 병합)**. `EVALS.md` 검진표 최신=v2.7.8, 주석은 v2.7.3까지. **→ 완료**: 새 측정 아닌 'CI 게이트 통과 기록'으로 v2.7.9~v2.7.11 행 1줄 + 탐지 영향 분석 v2.7.11까지 연장(PR#14/#15 명시). v2.7.9~11은 검사기·보안·CI·문서 한정이라 탐지율 불변. 근본책(check_version에 EVALS 강제)은 미채택 — 측정 로그라 마커 강제가 새 false-fail.
+- **[P1] verify_html_report: 허위 종료 주석(`<!-->`)으로 XSS 페이로드가 검사기 우회 (security E1-1)**. `_HtmlAuditor`에 `handle_comment`가 없어 주석 내부 미검사. python `html.parser`는 `<!-->`를 주석으로 삼키지만 브라우저는 '급종료(abrupt-closing)'로 처리 → `<!--><img src=x onerror=alert(1)>-->`가 rc=0 통과하나 브라우저에선 라이브(실측). **→ 완료**: `handle_comment`(주석 DATA의 허용목록 밖 태그→HTML-01, `on*=`→HTML-02 fail-closed) + 보조 `ABRUPT_COMMENT_RE=r'<!---?>'` raw 검사(이중 방어). 실측: 공격 `<!-->`·`<!--->` 둘 다 HTML-01+HTML-02 rc=1, 골격 정상주석 rc=0(false-fail 0). 회귀 테스트 +3. observation의 '`<!--><div>`가 rc=1' 진술은 거짓이라 그 근거 폐기.
+- **[P2] 보안 픽스처(leaky)는 골든 보고서가 없어 형식·위치 게이트가 E2E로 한 번도 안 돌아감 (ci E1-1)**. 골든 E2E(`run_checks.py`)는 messy만. leaky는 SEC/PII 축 유일 보안 픽스처인데 골든 부재 → 위치 게이트가 비보안 ID에만 회귀 고정. **→ 완료**: `tests/golden/leaky-report.md` 손작성(release-check 모드, 발견ID 6종, 시크릿 'AKIA…'/'ghp_…'로 마스킹 — 실제 값 인용 시 FORM-11 발화 함정 실측 회피) + ci.yml leaky E2E 스텝 + test_run_checks pytest 1건. 실측: 3게이트 통과·위치 SEC-01(app.py)·SEC-01(config.js)·PII-01(notes.md) 3/3 OK.
+- **[P1] README '품질 근거'가 '3회 100%'를 v1.0.0 측정인데 현재 버전 성능처럼 읽히게 함 (positioning E1-1)**. **→ 완료**: README:92 줄 끝에 측정-버전 단서 한 구절 보강(접두·접미 보존, 최소 diff). check_version은 '현재 버전:' 마커줄(8행)만 읽어 92행 산문 불가시(실측) → false-fail 0.
+- **[P2] release-check '비밀키 3회 100%'가 SEC-01 패턴 확장(v2.7.6) 이후 미재측정 (positioning E1-2)**. README:93 비밀키 주장이 시점 표기 없이 단언, EVALS release-check 표는 v2.0.1에서 멈춤. CHANGELOG v2.7.6이 SEC-01에 AIza·sk- 추가했으나 leaky 심은 8건은 미사용(grep 0건)이라 구측정 유효. **→ 완료**: README:93에 'v2.0.1 측정, 이후 패턴 확장은 표본 무관 불변' 단서 1줄.
+- **[P2] report-formats §5가 런타임 미배포(tests 전용) 도구를 md 검사기로 지칭 (skill-docs/report-form 병합)**. §5가 'md는 verify_report_format.py가 검사'라 하나 그 도구는 tests/에만 있고 compare_report import라 standalone ModuleNotFoundError(임시 install 실측: tools/엔 check_write_boundary·verify_html_report뿐). **→ 완료**: §5 한 문장을 '런타임 md 점검=SKILL.md 모델 자가점검, verify_report_format.py는 CI/측정용·미배포, HTML/PDF만 tools/verify_html_report.py'로 정정. 도구 tools/ 이동·복사는 미채택(BL-31 거절 방향).
+- **[P2] --deep 추가 정답(HIST-01·DEP-01)을 채점기가 오탐 처리 — 정직한 --deep 보고서가 기본 채점 미달 (scoring E1-4)**. messy EXPECTED는 --deep 정답을 명시하나 compare_report에 --deep 인지 없어 14+2 보고 시 오탐 미달. **→ 완료**: messy EXPECTED '## 추가 보고 허용(채점 중립)'에 HIST-01·DEP-01 2줄 추가. 실측: parse_expected_ids 분모 14 불변, parse_neutral_ids +2, check_scoring_regression 무영향.
+- **[nit] README checkup 행 '진단 카탈로그(35종 ID) 기반'이 기본 검진 적용 범위(22항목)와 어긋남 (positioning E1-3)**. 실측: distinct ID 35 = 기본 22 + [정밀] 8 + SEC/PII/REL 5. **→ 완료**: README:14를 '기본 검진 22항목 기반'으로 교체.
+
+### 기각 (3)
+
+- **HTML 등급원↔판정어 부분문자열 검사 (report-form E1-2) — 함정(TRAP)**. 'D'가 본문 30회 등장(ID·스케일·경로)해 정상·모순 보고서 모두 통과, false-pass 미해결(임시폴더 실측). 진짜 닫으려면 구조 파서(=M-(A) 4회 기각)+픽스처+양방향 테스트 = NEEDS-TDD-FIRST. '가벼운 1줄' 폐기.
+- **run_checks.py에 HTML parity·보안 통합 (report-form E1-3) — ALREADY-REJECTED**. BL-31(BACKLOG:125)에 'run_checks HTML 통합=미채택(YAGNI)'로 명시 기각된 재제안. HTML은 §2 모델 절차 + ci.yml pytest 33테스트로 이미 두 겹 커버.
+- **위치 게이트 세그먼트-블리드 강화 (scoring E1-3) — ALREADY-REJECTED**. BL-22 중간안의 알려진 한계, 강화=BL-17(line93 보류 확정). 청구 본인도 코드 변경 권고 아님 명시.
+
+### 보류 (INTENTIONAL-HOLD / NEEDS-TDD-FIRST, 17 — 중복 병합 후)
+
+- **[BL-05] DOC-04 문서-실체 불일치 ID — 보류 유지(OVERBUILD-GATE)**. 신규 SPEC ID 신설=불변 계약 영향(픽스처+EXPECTED+재측정), '치료 후' 검진이라 외부 0명 위 발동≈0. 트리거: 치료 사이클이 외부 사용자에게 실제로 도는 시점(BL-14).
+- **[BL-14] 외부 사용자 0 + external-corpus 빈 틀 — 보류(INTENTIONAL-HOLD)**. 트리거=외부 사용자 1인 확보. 자작 충전=자기표본편향(교리 ③).
+- **[BL-17] 전면 위치·심각도 채점 — 보류 확정 유지(ALREADY-REJECTED, no-op)**. 근거: 4차=심각도 샘플링 명시 기각(line113), 7차=과잉건축 기각(line135).
+- **DUP-01 vs DUP-02 경계 모호 (catalog E1-2) — NEEDS-TDD-FIRST**. tiebreaker 부재 갭 실재, false-fail 0은 픽스처 없이 불가. 채택: DUP-02 단독 픽스처+EXPECTED+compare 회귀 → catalog 정량 경계 1줄.
+- **BIG-03 들여쓰기 단계 기준점 미정의 (catalog E1-4) — NEEDS-TDD-FIRST**. 파일기준 vs 본문기준 반례 재현, messy 앵커는 양쪽 다 6>4라 미잠금. 채택: 경계 픽스처+EXPECTED 후 catalog:153 1문장 보강.
+- **보관함(archive) 흡수가 DEAD/STALE 침묵 가능 (catalog E1-5) — NEEDS-TDD-FIRST**. archive 픽스처 부재로 경계 미고정(EVALS:26 '미발동' 자인) 실재, 침묵 해석은 과장(:128 흡수 대상은 DUP-01·BIG-01·STRUCT뿐). 채택: archive/ 2케이스+EXPECTED. 처방의 '30% 임계'·'활성 참조 시 DEAD-03'(모순) 제외.
+- **닫히지 않은 skip 태그(`<title>`)면 본문 전체 삼켜 거짓 미달 (report-form E1-6) — NEEDS-TDD-FIRST**. #15 깊이카운터 역방향 취약(`</title>` 결손 시 전수 false-fail). 과엄격이라 false-PASS 구조상 불가=보안 안전. nit.
+- **parity ID 부분문자열 충돌 (report-form E1-5) — INTENTIONAL-HOLD**. 'DUP-01' in 'DUP-010' 버그는 함수 레벨 재현되나 현 카탈로그 2자리라 발동 불가(잠복). docstring 한계 1줄 + 다자릿수 도입과 동시 처리 기록.
+- **골든 HTML이 §2 클리니컬 골격 미준수 (report-form E1-1) — INTENTIONAL-HOLD**. §2 골격 충실 HTML도 두 검증기 동일 통과 실측 — 검증 사각 전제 거짓. 골든=#14 내용 패리티 픽스처. 이모지 미강제=BL-31 의도.
+- **HTML-06/FORM-11 엔티티 인코딩 비밀키 우회 (security E1-2) — INTENTIONAL-HOLD**. `AKIA…&#69;` 통과 실측되나 '모델이 자기 키를 엔티티로 쪼갠다'는 비현실(nit). 코드픽스=과잉건축.
+- **HTML-04 위험URI 단어중간 공백 우회 (security E1-3) — INTENTIONAL-HOLD**. 항해 태그가 ALLOWED_TAGS 밖→HTML-01 선탈락, 구조 태그는 실행 경로 없어 현재 비악용. 처방 '공백 제거'는 'data: 12' false-fail 함정.
+- **release-checklist SEC-01 토큰 패턴 드리프트 (skill-docs E1-2) — INTENTIONAL-HOLD(riskToDetection med)**. CHANGELOG v2.7.6이 의식적 결정으로 추적, 패턴 정렬은 SEC-01 탐지를 바꿔 계약에 묶임. 처방 '{20,}→{22,}'는 21자 github_pat 떨구는 후퇴라 적용 불가.
+- **카탈로그 교차참조·단방향 표기 nit 묶음 (catalog E1-3·E1-6) — INTENTIONAL-HOLD**. 입증 안 된 해악의 문구 nit. 안정 텍스트 보존 차원 보류.
+- **쓰기 경계 심링크 탈출 검사 Windows SKIP (ci E1-2) — INTENTIONAL-HOLD**. CHANGELOG v2.7.6이 'skip' 명시 채택, ubuntu 축 커버. 보강 옵션: mklink /J Windows 전용 케이스. nit.
+- **BL-23 재방문 fallback 강화 — INTENTIONAL-HOLD**. record-format §4.1·§4.7이 이미 '명시적 자동강등'과 동치. 외부 0명이라 손상 표본 없어 실측 불가.
+- **BL-25 ① 공유 유틸 미통합 + ② 종료코드 분리 — INTENTIONAL-HOLD**. ① tools↔tests import 장벽으로 ROI 낮음 ② ==1 단언 테스트 3건 깨짐 반례 재현, CI는 0/비0만 봐서 nit·ROI 음수.
+- **BL-29 한글 본체 파일명 위치 샘플링 — NEEDS-TDD-FIRST**. '보고서초안.md' 미추출 갭 실재하나 순진한 `[\w가-힣]` 치환은 한글 접두 흡수 회귀(실측). 현재 위험 낮음(채점 슬롯 미등장). EVALS:108 고지 명문화됨.
+
+**채택 9건 모두 진단 탐지 로직 불변(문서·테스트·픽스처 정답지·골든 표지·EVALS 산문 한정, compare_report·check_location_sampling·카탈로그 ID·탐지 알고리즘 무변경) → 사용자 프로젝트 검진 회귀 불가능.**
+
+- **BL-33 결과지 명함(주치의 등급 배지+결과지 갤러리) — INTENTIONAL-HOLD(착수 게이트: 외부 사용자 1명 이상)**. 검진받은 저장소가 README에 다는 등급 배지+공개 결과지 갤러리로 순환 유입 장치. 2026-07-20 인기도 설계(office-hours C안)에서 사용자 0 상태 닭-달걀로 보류. 의존 없음. 정본 설계문서: ~/.gstack/projects/Ps-Neko-project-doctor-dev/440497-main-design-20260720-103817.md

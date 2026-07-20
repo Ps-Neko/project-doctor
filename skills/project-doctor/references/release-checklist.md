@@ -19,9 +19,9 @@
   - AWS Access Key: `AKIA[0-9A-Z]{16}`
   - GitHub 토큰: `ghp_[A-Za-z0-9]{36}`, `github_pat_[A-Za-z0-9_]{20,}`
   - Slack: `xox[baprs]-[A-Za-z0-9-]{10,}`
+  - 개인키 블록: `-----BEGIN [A-Z ]*PRIVATE KEY-----`
   - Google API 키: `AIza[0-9A-Za-z_\-]{35}`
   - OpenAI/Anthropic류 API 키: `sk-[A-Za-z0-9_-]{20,}`
-  - 개인키 블록: `-----BEGIN [A-Z ]*PRIVATE KEY-----`
   - 일반형: `(api[_-]?key|secret|password|passwd|token)\s*[:=]\s*['"][^'"]{8,}['"]`
   - `.env*` 파일의 `이름=값` 줄 (절대 규칙 4: 파일 내용은 열람하지 않고 **존재와 줄 위치만**)
 - 제외(오탐 방지): `YOUR_API_KEY_HERE`·`<...>`·`xxx` 같은 **플레이스홀더 형태**는 보고하지 않음. 공식 예시 키(AWS 공식 문서의 `AKIA…EXAMPLE`형 — 전체 문자열은 자기 검진 매치 방지를 위해 이 문서에 적지 않는다)는 형식이 진짜와 같으므로 **보고하되** "공식 예시 키로 보임 — 확인 필요"를 덧붙인다.

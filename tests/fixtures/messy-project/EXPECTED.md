@@ -45,6 +45,8 @@
 
 - HARD-02 — DUP-01(3벌 복사)의 부산물로 50000·30000·3000·0.05 가 main.py/utils.py/helpers.py에 각 3회 반복됨
 - STRUCT-03 — static_data.js가 데이터 파일 이름인데 조회 함수(로직)를 포함함
+- HIST-01 — (--deep) main.py 핫스팟 이력. setup-git-history.ps1 적용 사본에서만 측정 가능하고, 기본 검진(git 이력 없음)에서는 보고되지 않는다
+- DEP-01 — (--deep) package.json의 lodash 미사용 의존성
 
 ## 정밀 검진(--deep) 추가 정답
 

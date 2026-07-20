@@ -15,9 +15,11 @@ compare_report.py가 "무엇을 찾았는가"(탐지율·오탐)를 채점한다
 """
 import re
 import sys
-from pathlib import Path
 
-EMPTY_MARK: str = "(없음)"
+# 펜스 처리·파일 읽기·빈 표식은 compare_report를 단일 출처로 공유한다 — 두 검사기의 펜스 계약이
+# 갈라지면 verify는 통과시키는데 compare는 0% 처리하는 모순이 생기므로(계약을 한 곳에서만 정의).
+from compare_report import EMPTY_MARK, outside_fence, read_lines
+
 ID_RE = re.compile(r"^[A-Z]+-\d{2,}$")
 VERSION_RE = re.compile(r"v(\d+)\.\d+\.\d+")
 
@@ -61,33 +63,31 @@ SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 
-def read_lines(path: str) -> list[str]:
-    # utf-8-sig: BOM 흡수. errors=replace: cp949(ANSI) 보고서도 트레이스백 없이 읽는다.
-    return Path(path).read_text(encoding="utf-8-sig", errors="replace").splitlines()
+def cover_block(lines: list[str]) -> list[str]:
+    """표지 정보 블록(보고서 첫 코드펜스)의 안쪽 줄만 돌려준다.
 
-
-def outside_fence(lines: list[str]) -> list[str]:
-    """코드펜스(```) 밖의 줄만 (원본 그대로) 돌려준다.
-
-    등급·절·4요소 검사는 템플릿 예시 인용(펜스 안)을 검사 대상에서 빼야,
-    펜스 안 올바른 예시가 펜스 밖 실제 위반을 가리는 우회를 막을 수 있다.
-    """
-    result, in_fence = [], False
+    표지의 '환자:'·'스킬 버전:'·'모드:' 줄은 항상 보고서 첫 코드블록 안에 있다(report-template 1절).
+    본문·부록의 예시 펜스(인용된 `스킬 버전: v1.0.0` 등)가 표지를 대신해 FORM-03을 충족하거나
+    주버전을 오판(→숙제 FORM-10 우회)하지 못하게, 표지 식별·주버전 판정은 이 첫 블록만 본다."""
+    block: list[str] = []
+    in_block = seen = False
     for line in lines:
         if line.strip().startswith("```"):
-            in_fence = not in_fence
+            if seen:
+                break  # 첫 블록의 닫는 펜스 — 표지 끝
+            in_block = seen = True
             continue
-        if not in_fence:
-            result.append(line)
-    return result
+        if in_block:
+            block.append(line)
+    return block
 
 
 def detect_major_version(lines: list[str]) -> int | None:
-    """'스킬 버전:'으로 시작하는 표지 줄에서 주 버전을 읽는다 (없으면 None).
+    """표지 코드블록의 '스킬 버전:' 줄에서 주 버전을 읽는다 (없으면 None).
 
-    줄머리 한정이라 본문의 과거 버전 언급('이전 보고서는 스킬 버전: v1.0.0…')에 속지 않는다.
-    """
-    for line in lines:
+    표지 첫 블록만 보므로 본문·부록의 과거 버전 인용(`이전 보고서는 스킬 버전: v1.0.0…`,
+    펜스로 감싼 예시 포함)에 속지 않는다."""
+    for line in cover_block(lines):
         if line.strip().startswith("스킬 버전:"):
             m = VERSION_RE.search(line)
             if m:
@@ -163,15 +163,17 @@ def collect_body_catalog_ids(content: list[str]) -> set[str]:
 
 
 def check_cover(lines: list[str], violations: list[str]) -> None:
-    # 표지는 코드블록 안에 들어가므로 펜스를 가르지 않고 전체에서 본다.
+    # 표지 정보(환자·스킬 버전·모드)는 보고서 첫 코드블록 안에 있다 — 본문 예시 펜스가 표지를
+    # 대신하지 못하게 그 첫 블록만 본다(제목 헤딩은 펜스 밖이라 detect_mode가 따로 본다).
+    cover = cover_block(lines)
     if detect_mode(lines) is None:
         violations.append(
             "FORM-01 표지 제목 헤딩이 없거나 모드 표지 제목(결과지/차트/계획서)이 아닙니다")
-    if not any(ln.strip().startswith("환자:") for ln in lines):
+    if not any(ln.strip().startswith("환자:") for ln in cover):
         violations.append("FORM-02 표지의 '환자:' 줄이 없습니다")
-    if not any(ln.strip().startswith("스킬 버전:") for ln in lines):
+    if not any(ln.strip().startswith("스킬 버전:") for ln in cover):
         violations.append("FORM-03 '스킬 버전: vX.Y.Z' 줄이 없습니다")
-    if not any("모드:" in ln for ln in lines):
+    if not any("모드:" in ln for ln in cover):
         violations.append("FORM-04 표지의 '모드:' 표기가 없습니다")
 
 

@@ -382,3 +382,29 @@ def test_appendix_id_with_empty_machine_block_fails(tmp_path: Path) -> None:
     assert result.returncode == 1
     assert "FORM-12" in result.stdout
     assert "BIG-02" in result.stdout
+
+
+# --- 표지 식별·주버전 판정은 표지 첫 코드블록만 본다 (본문 펜스 예시가 표지를 대신 못 함) ---
+
+def test_fenced_version_example_does_not_satisfy_cover(tmp_path: Path) -> None:
+    """본문 펜스 안 '스킬 버전: v1.0.0' 예시가 표지의 스킬 버전 줄을 대신하지 못한다.
+
+    표지(첫 코드블록)에 실제 스킬 버전 줄이 없으면 FORM-03이 떠야 하고, 주버전도 표지에서만
+    읽으므로 본문 펜스의 v1.0.0에 속아 v1로 오판→숙제(FORM-10)를 건너뛰지 않는다. 이전엔
+    check_cover·detect_major_version이 전체 줄을 봐서 펜스 예시가 표지를 대신하고 숙제를 우회시켰다."""
+    block = (
+        "### 🔴 심각 1 [DUP-01] — 중복\n"
+        "- **무슨 뜻인가요?** 설명.\n"
+        "- **어디?** `a.py`\n"
+        "- **고치면?** 좋아집니다.\n"
+        "- **승인 명령:** \"심각 1 실행해줘\"\n"
+        "\n```\n스킬 버전: v1.0.0\n```\n"  # 본문 펜스 안 예시(표지가 아님)
+    )
+    result = _write_and_run(
+        tmp_path,
+        _checkup_report(finding_block=block,
+                        version_line="모드: 건강검진",  # 표지엔 스킬 버전 줄 없음
+                        homework_line="(숙제 줄 없음)"))
+    assert result.returncode == 1
+    assert "FORM-03" in result.stdout  # 표지에 스킬 버전 줄 부재
+    assert "FORM-10" in result.stdout  # major가 v1로 오판되지 않아 숙제 검사가 돈다

@@ -3,7 +3,7 @@
 내 프로젝트가 마음에 안 들거나, 방향을 바꾸고 싶거나, 남에게 넘겨야 할 때 —
 프로젝트를 진단하고, **승인한 개선만** 안전하게 실행해 주는 Claude Code 스킬입니다.
 
-> **현재 버전: v1.7.5** — 전 모드 동작: 접수 문진 · 건강검진(진단→보고→치료→되돌리기) · 정밀 검진(--deep) · 초진 차트 · 방향전환 · 공개 전 검진 + 처방 실행 전 전/후 변경 내용 미리보기 + 쓰기 경계 자동 검사 + 보고서 형식 선택(md/HTML 클리니컬 결과지/PDF 자동 변환/워드). 변경 이력: [CHANGELOG.md](./CHANGELOG.md)
+> **현재 버전: v2.7.12 "8차 외부 평가 정합 — 골든·측정 최신화 + HTML 주석 XSS 차단"** — 전 모드 동작 + 단골 기능(등급 추이 · 치료 부위 경과 · 이번 주 처방 · 검진 주기 안내) + 처방 실행 전 전/후 변경 내용 미리보기 + 쓰기 경계 자동 검사 + 보고서를 마크다운/HTML(클리니컬 결과지 디자인)/PDF(내장 브라우저 자동 변환)/워드(변환 도구 있을 때)로 받기 + **HTML 결과지 보안 검증기**(허용목록 기반 태그·외부 리소스·비밀키 노출 기계 검사). 변경 이력: [CHANGELOG.md](./CHANGELOG.md)
 
 ## ⚠️ 사용 전 꼭 알아두세요 (필수 고지)
 
@@ -11,20 +11,31 @@
 2. **비용**: 검진은 Claude 사용량(토큰)을 소모합니다. 정밀 검진(`--deep`)은 기본 검진보다 수 배 더 듭니다 — 평소엔 기본 검진을 권합니다.
 3. **검사 범위와 면책**: 이 스킬은 진단 카탈로그에 정의된 알려진 패턴만 검사합니다. 보안 취약점 분석·법적 검토는 범위 밖이며, 테스트에서의 합격 기준(예: 탐지율 100%)은 내부 품질 기준이지 성능 보증이 아닙니다. 결과에 대한 최종 판단과 책임은 사용자에게 있습니다.
 
-## 설치 (PowerShell)
+## 설치
 
-1. 이 저장소(automation-main)를 내려받아 압축을 풉니다. — **공식 저장소의 릴리스에서만 받으세요** (메신저로 돌아다니는 zip 사본은 변조 위험이 있습니다)
-2. PowerShell을 열고 `cd <받은 폴더 경로>`로 이동합니다. (예: `cd C:\Users\내이름\Downloads\automation-main`)
-3. 아래 명령을 실행합니다.
+**저장소 전체를 받았다면(권장)** — 저장소 루트에서 한 줄이면 됩니다:
 
+- Windows (PowerShell): `powershell -ExecutionPolicy Bypass -File install.ps1`
+- macOS / Linux: `bash install.sh`
+
+설치 스크립트가 `skills/project-doctor`를 `~/.claude/skills/`로 복사하고 설치 인식(SKILL.md·버전)까지 확인합니다. 점검만 하려면 `-Check`(macOS/Linux는 `--check`). **공식 저장소의 릴리스에서만 받으세요** — 메신저로 돌아다니는 zip 사본은 변조 위험이 있습니다.
+
+<details>
+<summary>이 스킬 폴더만 받았을 때 — 수동 설치</summary>
+
+이 README가 있는 폴더(스킬 폴더) **안에서** 실행하세요 — 현재 폴더(`.`)의 내용을 통째로 복사합니다.
+
+PowerShell:
 ```powershell
-New-Item -ItemType Directory -Force ~/.claude/skills
-Copy-Item -Recurse -Force skills/project-doctor ~/.claude/skills/
+New-Item -ItemType Directory -Force ~/.claude/skills/project-doctor
+Copy-Item -Recurse -Force .\* ~/.claude/skills/project-doctor/
 ```
+macOS / Linux: `mkdir -p ~/.claude/skills/project-doctor && cp -r . ~/.claude/skills/project-doctor/`
 
-복사 후 **Claude Code를 새로 시작**해야 `/project-doctor`가 인식됩니다.
-재설치는 같은 명령을 다시 실행하면 됩니다. **업데이트할 때는** 옛 파일이 남지 않도록 **먼저 기존 폴더를 지우세요** — Windows `Remove-Item -Recurse -Force ~/.claude/skills/project-doctor`, macOS / Linux `rm -rf ~/.claude/skills/project-doctor` (그다음 위 복사). 수동 복사는 병합이라 지우지 않으면 삭제·개명된 옛 파일이 남습니다.
-"경로를 찾을 수 없음" 오류가 나오면 2번의 폴더 위치를 다시 확인하세요.
+> **업데이트(재설치)할 때**는 옛 파일이 남지 않도록 **먼저 기존 폴더를 지우세요** — Windows `Remove-Item -Recurse -Force ~/.claude/skills/project-doctor`, macOS / Linux `rm -rf ~/.claude/skills/project-doctor` (그다음 위 복사). 자동 스크립트(`install.ps1`/`install.sh`)는 이 과정을 알아서 합니다.
+</details>
+
+복사·설치 후 **Claude Code를 새로 시작**해야 `/project-doctor`가 인식됩니다. (재설치·업데이트도 같은 명령을 그대로 다시 실행 — 여러 번 실행해도 안전합니다.)
 
 ## 사용법
 
@@ -53,5 +64,5 @@ Copy-Item -Recurse -Force skills/project-doctor ~/.claude/skills/
 
 ## 유지보수 메모
 
-- **재측정 트리거**: Claude Code 또는 모델 메이저 업데이트 시, 혹은 분기 1회 — `tests/fixtures/`의 자체 테스트(검진 탐지율)를 재실행해 품질을 확인합니다
-- 문의·버그 제보는 GitHub Issues로 남겨 주세요
+- **재측정 트리거**: Claude Code 또는 모델 메이저 업데이트 시, 혹은 분기 1회 — `tests/fixtures/`의 자체 테스트(검진 탐지율)를 재실행해 품질을 확인합니다 (개발 저장소의 PLAN.md 참고)
+- 문의·버그 제보 채널은 사내 배포 시 별도 공지

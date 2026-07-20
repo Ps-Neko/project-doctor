@@ -33,15 +33,13 @@ def find_version(path: Path, marker: str):
     """파일에서 marker가 든 첫 줄을 보고 (truth | MISSING | BROKEN)을 돌려준다."""
     if not path.exists():
         return MISSING
-    marker_seen = False
     for line in path.read_text(encoding="utf-8-sig", errors="replace").splitlines():
         if marker in line:
-            marker_seen = True
+            # 첫 마커 줄에서 판정을 확정한다 — CHANGELOG처럼 마커(## v)가 여러 줄이면 최신(첫)
+            # 헤딩이 깨졌을 때 그 아래 과거 정상 헤딩으로 새지 않고 BROKEN으로 잡는다(docstring 일치).
             m = VER.search(line)
-            if m:
-                return m.group(1)
-    # 마커는 봤는데 버전 파싱이 안 됐다면 깨진 표기로 본다.
-    return BROKEN if marker_seen else MISSING
+            return m.group(1) if m else BROKEN
+    return MISSING
 
 
 def main() -> int:
@@ -59,6 +57,12 @@ def main() -> int:
         ("루트 README", ROOT / "README.md", "현재 버전:"),
         ("스킬 README", ROOT / "skills" / "project-doctor" / "README.md", "현재 버전:"),
         ("CHANGELOG 최신", ROOT / "skills" / "project-doctor" / "CHANGELOG.md", "## v"),
+        # 골든 검진 보고서도 표지에 '스킬 버전: vX.Y.Z'를 인쇄하므로, 버전 bump 때 골든을
+        # 갱신하지 않으면 표지가 stale 해진다(8차 평가 P0 — 실제로 v2.7.7에 4버전 동결돼 있었다).
+        # parity·형식 검증기·E2E 어느 게이트도 'SKILL 대비 stale'를 잡지 못했으므로 여기서 강제한다
+        # (.md는 코드펜스 안 '스킬 버전:' 줄, .html은 <p class=meta> 줄 — 같은 마커로 둘 다 잡힌다).
+        ("골든 보고서(.md)", ROOT / "tests" / "golden" / "checkup-report.md", "스킬 버전:"),
+        ("골든 보고서(.html)", ROOT / "tests" / "golden" / "checkup-report.html", "스킬 버전:"),
     ]
 
     print(f"기준(SKILL.md): v{truth}")

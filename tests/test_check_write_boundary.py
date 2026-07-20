@@ -85,3 +85,34 @@ def test_unc_path_rejected(tmp_path):
     r = run(tmp_path, r"\\server\share\evil.txt")
     assert r.returncode == 1, r.stdout
     assert "경계 위반" in r.stdout
+
+
+def _make_symlink(link: Path, target: Path) -> None:
+    # 심링크 생성은 Windows 비-개발자모드에서 권한 오류 — 그런 환경에서는 테스트를 건너뛴다.
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("심링크 생성 권한 없음 (Windows 비-개발자모드 등)")
+
+
+def test_symlink_escaping_root_fails(tmp_path):
+    # 루트 안의 심링크가 루트 밖을 가리키면 resolve()가 링크를 따라가 '밖'으로 판정한다.
+    # (검사 후 교체되는 TOCTOU는 도구 범위 밖 — docstring 명시. 검사 시점 분류만 회귀 고정.)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root = tmp_path / "proj"
+    root.mkdir()
+    _make_symlink(root / "sneaky", outside)
+    r = run(root, "sneaky/secret.txt")
+    assert r.returncode == 1, r.stdout
+    assert "경계 위반" in r.stdout
+
+
+def test_symlink_within_root_passes(tmp_path):
+    # 루트 안을 가리키는 정상 심링크는 통과해야 한다 (정당한 심링크 거짓 거부 방지).
+    root = tmp_path / "proj"
+    root.mkdir()
+    (root / "real").mkdir()
+    _make_symlink(root / "alias", root / "real")
+    r = run(root, "alias/f.txt")
+    assert r.returncode == 0, r.stdout

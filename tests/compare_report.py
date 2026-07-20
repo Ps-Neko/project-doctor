@@ -27,6 +27,21 @@ def read_lines(path: str) -> list[str]:
     return Path(path).read_text(encoding="utf-8-sig", errors="replace").splitlines()
 
 
+def outside_fence(lines: list[str]) -> list[str]:
+    """코드펜스(```) 밖의 줄만 (원본 그대로) 돌려준다.
+
+    템플릿 9절 예시·부록의 '발견ID:'/'숙제:' 예시가 실제 기계 판독 줄로 오인되어
+    채점을 오염시키는 것을 막는다(verify_report_format.outside_fence와 동일 계약)."""
+    result, in_fence = [], False
+    for line in lines:
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            result.append(line)
+    return result
+
+
 def _is_expected_heading(stripped: str) -> bool:
     """'## 심은 문제' 또는 '## 심은 문제 (14건)'만 정답 절로 인정 ('## 심은 문제 해설' 등 후속 절 차단)."""
     return stripped == EXPECTED_HEADING or stripped.startswith(EXPECTED_HEADING + " (")
@@ -42,14 +57,9 @@ def parse_report_ids(lines: list[str]) -> list[str]:
     코드펜스(```) 안의 줄은 무시한다 — 템플릿 9절 예시나 부록의 '발견ID:' 예시가
     실제 블록으로 오인되어 채점을 오염시키는 것을 막는다(verify가 '여러 개'를 따로 잡는다).
     """
-    found, in_fence = [], False
-    for line in lines:
+    found = []
+    for line in outside_fence(lines):
         stripped = line.strip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
         if stripped.startswith(REPORT_PREFIX):
             found.append(stripped)
     if not found:
@@ -65,13 +75,7 @@ def parse_revisit_lines(lines: list[str]) -> dict[str, str]:
 
     코드펜스 안의 줄은 무시한다 — parse_report_ids와 동일 계약(템플릿 예시
     `숙제: HARD-01` 등이 실제 참고 출력으로 오인되지 않게)."""
-    clean, in_fence = [], False
-    for line in lines:
-        if line.strip().startswith("```"):
-            in_fence = not in_fence
-            continue
-        if not in_fence:
-            clean.append(line)
+    clean = outside_fence(lines)
     extras: dict[str, str] = {}
     for prefix, key in (("비교:", "comparison"), ("숙제:", "homework")):
         found = [ln.strip() for ln in clean if ln.strip().startswith(prefix)]
@@ -163,12 +167,16 @@ def main(argv: list[str]) -> int:
         print("오류: 정답지의 '## 심은 문제' 표에서 ID를 찾지 못했습니다 "
               "(헤더 'ID' 열·표 형식을 확인하세요).")
         return 1
-    missed = [i for i in expected_ids if i not in set(report_ids)]
+    # 불변 집합은 컴프리헨션 밖에서 한 번만 만든다 (루프마다 set() 재생성하면 O(n²)).
+    report_set = set(report_ids)
+    expected_set = set(expected_ids)
+    neutral_set = set(neutral_ids)
+    allowed_set = expected_set | neutral_set
+    missed = [i for i in expected_ids if i not in report_set]
     unique_report = list(dict.fromkeys(report_ids))
     neutral_hits = [i for i in unique_report
-                    if i in set(neutral_ids) and i not in set(expected_ids)]
-    false_positives = [i for i in unique_report
-                       if i not in set(expected_ids) | set(neutral_ids)]
+                    if i in neutral_set and i not in expected_set]
+    false_positives = [i for i in unique_report if i not in allowed_set]
     n_found = len(expected_ids) - len(missed)
     rate = n_found / len(expected_ids) * 100
     passed = rate >= PASS_THRESHOLD and not false_positives
