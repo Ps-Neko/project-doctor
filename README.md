@@ -5,13 +5,13 @@ What is wrong → where to fix it → what to approve first. It only changes wha
 
 [![CI](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml)
 
-> **Note: diagnosis reports are generated in Korean.** The skill was built Korean-first (that is its edge — plain-language reports for non-developers in Korean). English report output is not available yet. Docs: **English (this file)** · **[한국어 README](./README.ko.md)**
+> **Note: diagnosis reports can now be generated in Korean or English.** Korean remains the original default for Korean conversations; English conversations use the English report template. Machine-readable grader markers stay in Korean by design. Docs: **English (this file)** · **[한국어 README](./README.ko.md)**
 
 **[3-minute demo — see a real diagnosis report](./DEMO.md)** · **[Measurement records (EVALS)](./EVALS.md)**
 
 ![Sample clinical report (HTML output)](./docs/assets/report-sample.png)
 
-Current version: **v2.7.12** <!-- 현재 버전: v2.7.12 (machine-readable marker for tests/check_version.py) --> — all modes + returning-patient features (grade trend "May D → today C", treated-area follow-up, one prescription per visit, checkup interval guidance), pre-execution change preview, write-boundary auto check, reports as Markdown / HTML ("clinical" report design) / PDF (auto-converted via your local browser) / Word, plus an HTML report security verifier (allowlist-based tag / external-resource / secret-leak machine checks). Changelog: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · License: [MIT](./LICENSE)
+Current version: **v2.8.0** <!-- 현재 버전: v2.8.0 (machine-readable marker for tests/check_version.py) --> — Korean and English diagnosis reports, all modes + returning-patient features (grade trend "May D → today C", treated-area follow-up, one prescription per visit, checkup interval guidance), pre-execution change preview, write-boundary auto check, reports as Markdown / HTML ("clinical" report design) / PDF (auto-converted via your local browser) / Word, plus an HTML report security verifier (allowlist-based tag / external-resource / secret-leak machine checks). Changelog: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · License: [MIT](./LICENSE)
 
 ## What it does
 
@@ -23,7 +23,7 @@ Current version: **v2.7.12** <!-- 현재 버전: v2.7.12 (machine-readable marke
 | **Pivot** `pivot` | "Should I change direction?" | Compare paths → keep / modify / drop classification → milestones that still run if you stop |
 | **Release check** `release-check` | Right before sharing / shipping | Secrets (including git history) and PII scan → pass / hold verdict |
 
-Every report explains each finding with **"What does it mean? / Where? / If fixed? / Approval command"** — in Korean.
+Every report explains each finding with **"What does it mean? / Where? / If fixed? / Approval command"** in English reports, with the matching plain-language Korean labels in Korean reports.
 
 ## Before you use it (required disclosure)
 
@@ -104,6 +104,7 @@ SPEC.md / PLAN.md        ← the skill's spec and build log
 ## Quality evidence (honest version)
 
 - Detection rate: **internal fixture baseline** — 3 consecutive independent-session runs at 100% against a 14-item answer key (pass bar: worst-of-3 ≥ 80%). Formal fresh 3-run measurement dates to v1.0.0; later versions keep catalog/scorer/fixtures unchanged and pass CI regression on every commit ([limits](./EVALS.md)).
+- English reports (v2.8.0): measured on **2 fresh official English runs (+1 pilot) plus 1 Korean regression run**, all passing format 0 / score 14-of-14 / false-positives 0 / location 5-of-5 — a smaller sample than the 3-run standard; model-generated reports are non-deterministic, so a small-sample pass can still be lucky ([limits](./EVALS.md)).
 - Secret detection: **internal baseline** — fake-key samples, 3 consecutive 100% with 0 false positives (pass bar: 100% — one miss is an incident).
 - All measurement is **machine comparison of report IDs against answer keys** (EXPECTED.md), not human impressions; reporting an ID not in the key counts as an automatic fail.
 - Know this: scoring is ID-match based, the procedure is AI-followed instructions, and **results can change when models change** — which is why re-measurement is scheduled per quarter / per major model update ([EVALS](./EVALS.md)).

@@ -22,6 +22,8 @@ from compare_report import EMPTY_MARK, outside_fence, read_lines
 
 ID_RE = re.compile(r"^[A-Z]+-\d{2,}$")
 VERSION_RE = re.compile(r"v(\d+)\.\d+\.\d+")
+LANG_KO = "ko"
+LANG_EN = "en"
 
 # 표지 제목 → 모드 (report-template.md 1절 표)
 TITLE_TO_MODE: dict[str, str] = {
@@ -29,25 +31,60 @@ TITLE_TO_MODE: dict[str, str] = {
     "프로젝트 초진 차트": "intro",
     "프로젝트 방향전환 계획서": "pivot",
     "공개 전 검진 결과지": "release-check",
+    "Project Health Checkup Report": "checkup",
+    "Project Intake Chart": "intro",
+    "Project Pivot Plan": "pivot",
+    "Pre-release Checkup Report": "release-check",
 }
 GRADED_MODES = {"checkup", "release-check"}  # 종합 판정이 의무인 모드
 
-# 등급↔표현 고정표 (report-template.md 2절 — 이 표 밖의 표현 금지)
-GRADE_TABLE: dict[str, tuple[str, str]] = {
-    "A": ("🟢", "건강해요"),
-    "B": ("🟢", "양호해요"),
-    "C": ("🟡", "주의가 필요해요"),
-    "D": ("🔴", "치료가 필요해요"),
+# 등급↔표현 고정표 (report-template.md 2절 / report-template-en.md 2절 — 이 표 밖의 표현 금지)
+GRADE_TABLE: dict[str, dict[str, tuple[str, str]]] = {
+    LANG_KO: {
+        "A": ("🟢", "건강해요"),
+        "B": ("🟢", "양호해요"),
+        "C": ("🟡", "주의가 필요해요"),
+        "D": ("🔴", "치료가 필요해요"),
+    },
+    LANG_EN: {
+        "A": ("🟢", "Healthy"),
+        "B": ("🟢", "Fair"),
+        "C": ("🟡", "Needs attention"),
+        "D": ("🔴", "Treatment needed"),
+    },
 }
 GRADE_LINE_RE = re.compile(r"^#\s*(🟢|🟡|🔴)\s*([ABCD])\s*—\s*(.+?)\s*$")
 FINDING_HEAD_RE = re.compile(r"^###\s+(🔴|🟡|⚪)")
 # 발견 항목 제목에 든 카탈로그 ID (예: `[DUP-01]`) — report-template 5절은 제목에 ID 필수.
 TITLE_ID_RE = re.compile(r"\[[A-Z]+-\d{2,}\]")
-# 압도 방지 부록(7절 "부록: 나머지 발견 항목") 헤딩 — 부록 항목 ID도 발견 집합에 포함된다.
-APPENDIX_HEAD_RE = re.compile(r"^##\s+부록")
+# 압도 방지 부록(7절) 헤딩 — 부록 항목 ID도 발견 집합에 포함된다.
+APPENDIX_HEAD_RE: dict[str, re.Pattern[str]] = {
+    LANG_KO: re.compile(r"^##\s+부록"),
+    LANG_EN: re.compile(r"^##\s+Appendix"),
+}
+
+COVER_FIELDS: dict[str, tuple[str, str, str]] = {
+    LANG_KO: ("환자:", "스킬 버전:", "모드:"),
+    LANG_EN: ("Patient:", "Skill version:", "Mode:"),
+}
+OVERALL_HEADING: dict[str, str] = {
+    LANG_KO: "## 종합 판정",
+    LANG_EN: "## Overall Assessment",
+}
+BODY_SECTIONS: dict[str, tuple[str, str]] = {
+    LANG_KO: ("## 부위별 소견", "## 오늘의 처방"),
+    LANG_EN: ("## Findings by Area", "## Today's Prescription"),
+}
+DIAGNOSIS_PREFIX: dict[str, str] = {
+    LANG_KO: "진단 결과:",
+    LANG_EN: "Diagnosis:",
+}
 
 # 4요소 라벨 (5절 — 발견 항목마다 4줄)
-FOUR_FIELDS: tuple[str, ...] = ("무슨 뜻인가요?", "어디?", "고치면?", "승인 명령:")
+FOUR_FIELDS: dict[str, tuple[str, ...]] = {
+    LANG_KO: ("무슨 뜻인가요?", "어디?", "고치면?", "승인 명령:"),
+    LANG_EN: ("What does this mean?", "Where?", "If we fix it?", "Approval command:"),
+}
 
 # 비밀키 값 노출 휴리스틱 — 위치 보고는 허용, 값을 옮겨 적으면 위반 (절대 규칙 4).
 # 확신 높은 접두사 패턴 위주. 한계: 접두사 없는 고엔트로피 시크릿(AWS 시크릿 액세스 키 40자,
@@ -82,18 +119,33 @@ def cover_block(lines: list[str]) -> list[str]:
     return block
 
 
+def detect_language(lines: list[str]) -> str | None:
+    """표지 코드블록의 환자/Patient 라벨로 보고서 언어를 감지한다."""
+    cover = cover_block(lines)
+    if any(line.strip().startswith("Patient:") for line in cover):
+        return LANG_EN
+    if any(line.strip().startswith("환자:") for line in cover):
+        return LANG_KO
+    return None
+
+
+def report_language(lines: list[str]) -> str:
+    """언어 감지 실패 시 기존 한국어 계약으로 폴백한다."""
+    return detect_language(lines) or LANG_KO
+
+
 def detect_major_version(lines: list[str]) -> int | None:
-    """표지 코드블록의 '스킬 버전:' 줄에서 주 버전을 읽는다 (없으면 None).
+    """표지 코드블록의 스킬 버전 줄에서 주 버전을 읽는다 (없으면 None).
 
     표지 첫 블록만 보므로 본문·부록의 과거 버전 인용(`이전 보고서는 스킬 버전: v1.0.0…`,
     펜스로 감싼 예시 포함)에 속지 않는다."""
     for line in cover_block(lines):
-        if line.strip().startswith("스킬 버전:"):
+        stripped = line.strip()
+        if stripped.startswith(("스킬 버전:", "Skill version:")):
             m = VERSION_RE.search(line)
             if m:
                 return int(m.group(1))
     return None
-
 
 def detect_mode(lines: list[str]) -> str | None:
     """표지 제목 헤딩에서 모드를 알아낸다 (펜스 밖 # 헤딩, 없으면 None)."""
@@ -142,7 +194,7 @@ def parse_found_ids(found_line: str) -> list[str]:
     return [part.strip() for part in body.split(",")]
 
 
-def collect_body_catalog_ids(content: list[str]) -> set[str]:
+def collect_body_catalog_ids(content: list[str], lang: str) -> set[str]:
     """사람용 본문에 '발견'으로 등장하는 카탈로그 ID([DUP-01] 등)를 모은다.
 
     수집 범위는 두 곳뿐: ① 발견 항목 제목(### 🔴/🟡/⚪ ... [ID]) ② 부록(7절 "부록:
@@ -154,7 +206,7 @@ def collect_body_catalog_ids(content: list[str]) -> set[str]:
     for line in content:
         stripped = line.strip()
         if stripped.startswith("## "):  # 새 절 — 부록 진입/이탈 갱신 (그 줄 자체는 수집 안 함)
-            in_appendix = bool(APPENDIX_HEAD_RE.match(stripped))
+            in_appendix = bool(APPENDIX_HEAD_RE[lang].match(stripped))
             continue
         if FINDING_HEAD_RE.match(stripped) or in_appendix:
             for m in TITLE_ID_RE.finditer(stripped):
@@ -166,16 +218,17 @@ def check_cover(lines: list[str], violations: list[str]) -> None:
     # 표지 정보(환자·스킬 버전·모드)는 보고서 첫 코드블록 안에 있다 — 본문 예시 펜스가 표지를
     # 대신하지 못하게 그 첫 블록만 본다(제목 헤딩은 펜스 밖이라 detect_mode가 따로 본다).
     cover = cover_block(lines)
+    lang = report_language(lines)
+    patient_label, version_label, mode_label = COVER_FIELDS[lang]
     if detect_mode(lines) is None:
         violations.append(
             "FORM-01 표지 제목 헤딩이 없거나 모드 표지 제목(결과지/차트/계획서)이 아닙니다")
-    if not any(ln.strip().startswith("환자:") for ln in cover):
-        violations.append("FORM-02 표지의 '환자:' 줄이 없습니다")
-    if not any(ln.strip().startswith("스킬 버전:") for ln in cover):
-        violations.append("FORM-03 '스킬 버전: vX.Y.Z' 줄이 없습니다")
-    if not any("모드:" in ln for ln in cover):
-        violations.append("FORM-04 표지의 '모드:' 표기가 없습니다")
-
+    if not any(ln.strip().startswith(patient_label) for ln in cover):
+        violations.append(f"FORM-02 표지의 '{patient_label}' 줄이 없습니다")
+    if not any(ln.strip().startswith(version_label) for ln in cover):
+        violations.append(f"FORM-03 '{version_label} vX.Y.Z' 줄이 없습니다")
+    if not any(mode_label in ln for ln in cover):
+        violations.append(f"FORM-04 표지의 '{mode_label}' 표기가 없습니다")
 
 def check_machine_block(lines: list[str], violations: list[str]) -> list[str]:
     found = collect_found_id_lines(lines)
@@ -200,9 +253,11 @@ def check_machine_block(lines: list[str], violations: list[str]) -> list[str]:
 
 
 def check_grade(lines: list[str], violations: list[str]) -> None:
+    lang = report_language(lines)
     content = outside_fence(lines)
-    if not any(ln.strip().startswith("## 종합 판정") for ln in content):
-        violations.append("FORM-07 '## 종합 판정' 절이 없습니다")
+    heading = OVERALL_HEADING[lang]
+    if not any(ln.strip().startswith(heading) for ln in content):
+        violations.append(f"FORM-07 '{heading}' 절이 없습니다")
         return
     found_grade = False
     for line in content:  # 첫 줄에서 멈추지 않고 펜스 밖 등급 줄을 전수 검사
@@ -211,7 +266,7 @@ def check_grade(lines: list[str], violations: list[str]) -> None:
             continue
         found_grade = True
         light, grade, label = match.groups()
-        want_light, want_label = GRADE_TABLE[grade]
+        want_light, want_label = GRADE_TABLE[lang][grade]
         if light != want_light or label != want_label:
             violations.append(
                 f"FORM-07 등급↔표현 고정표 위반: {grade}는 "
@@ -220,15 +275,15 @@ def check_grade(lines: list[str], violations: list[str]) -> None:
     if not found_grade:
         violations.append("FORM-07 종합 판정의 등급 줄(`# 🔴 D — ...`)이 없습니다")
 
-
 def check_body_sections(lines: list[str], violations: list[str]) -> None:
+    lang = report_language(lines)
     headings = [ln.strip() for ln in outside_fence(lines)]
-    for section in ("## 부위별 소견", "## 오늘의 처방"):
+    for section in BODY_SECTIONS[lang]:
         if not any(h.startswith(section) for h in headings):
             violations.append(f"FORM-08 '{section}' 절이 없습니다")
-    if not any(h.startswith("진단 결과:") for h in headings):
-        violations.append("FORM-08 오늘의 처방의 '진단 결과:' 줄이 없습니다")
-
+    diagnosis = DIAGNOSIS_PREFIX[lang]
+    if not any(h.startswith(diagnosis) for h in headings):
+        violations.append(f"FORM-08 오늘의 처방의 '{diagnosis}' 줄이 없습니다")
 
 def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
                       violations: list[str]) -> None:
@@ -255,7 +310,7 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
             # ### 발견 항목은 없지만 부록(## 부록)에만 카탈로그 ID가 있는 경우 — 아래 FORM-12
             # 교차검사가 이 조기 return에 가려 사각지대였다(Codex 리뷰). 부록 전용 ID도 9절
             # ("발견ID 블록엔 본문·부록 구분 없이 모든 발견 ID") 위반이므로 여기서 함께 잡는다.
-            body_set = collect_body_catalog_ids(content)
+            body_set = collect_body_catalog_ids(content, report_language(lines))
             if body_set:
                 violations.append(
                     "FORM-12 발견ID는 (없음)인데 본문·부록에 발견 ID가 있습니다: "
@@ -277,7 +332,7 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
                 f"FORM-09 발견 {idx}번 항목 제목에 카탈로그 ID([DUP-01] 형식)가 없습니다: "
                 f"{title[:40]}")
         btext = "\n".join(block)
-        missing = [f for f in FOUR_FIELDS if f not in btext]
+        missing = [f for f in FOUR_FIELDS[report_language(lines)] if f not in btext]
         if missing:
             violations.append(
                 f"FORM-09 발견 {idx}번 항목에 4요소 라벨 누락: {', '.join(missing)}")
@@ -289,7 +344,7 @@ def check_four_fields(lines: list[str], ids: list[str], machine_ok: bool,
     # 제목 ID부터 채워야 이 대조가 의미를 가지며, 같은 뿌리의 위반을 두 번 보고하지 않는다.
     if titles_ok:
         machine_set = set(ids)
-        body_set = collect_body_catalog_ids(content)
+        body_set = collect_body_catalog_ids(content, report_language(lines))
         only_machine = sorted(machine_set - body_set)
         only_body = sorted(body_set - machine_set)
         if only_machine:
