@@ -1,0 +1,5 @@
+{
+  "name": "project-doctor",
+  "description": "Project health checkup skill for AI-built projects. Diagnosis is read-only, only approved fixes run, always undoable. Reports in Korean.",
+  "version": "2.7.12"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "project-doctor",
+  "owner": { "name": "Ps-Neko" },
+  "description": "Project Doctor - a Claude Code skill that diagnoses AI-built projects and produces plain-language reports (in Korean).",
+  "plugins": [
+    {
+      "name": "project-doctor",
+      "source": "./skills/project-doctor",
+      "description": "Project health checkup skill: checkup / deep checkup / intro chart / pivot / release-check. Reports in Korean."
+    }
+  ]
+}
