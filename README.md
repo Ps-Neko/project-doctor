@@ -1,3 +1,5 @@
+> **📦 병합 완료 (2026-07-20)** — 이 저장소의 개발은 비공개 저장소 **project-doctor-dev**로 통합되었습니다(공개판 커밋 기록은 그쪽 `archive/project-doctor-public/` 폴더에 보존). 이 저장소는 읽기 전용 보관 상태입니다.
+
 # 프로젝트 주치의 (Project Doctor)
 
 [![CI](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml)
