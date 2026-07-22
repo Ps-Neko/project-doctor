@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Project Doctor — English sample report</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef2f0; color: #20302a; font-family: Arial, sans-serif; }
+    main { width: 1200px; min-height: 900px; margin: 0 auto; padding: 52px 64px; background: #fffdfa; }
+    .eyebrow { color: #60746a; font-size: 18px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { margin: 12px 0 10px; font-family: Georgia, serif; font-size: 52px; line-height: 1; }
+    .lede { color: #55645d; font-size: 22px; margin: 0 0 38px; }
+    .status { display: grid; grid-template-columns: 210px 1fr; gap: 28px; padding: 28px; border: 1px solid #cfdbd3; border-radius: 14px; background: #f5f8f5; }
+    .grade { color: #b45309; font-family: Georgia, serif; font-size: 96px; font-weight: 700; line-height: .75; }
+    .grade-label { color: #9a4e08; font-size: 19px; font-weight: 700; margin-top: 12px; }
+    h2 { font-family: Georgia, serif; font-size: 28px; margin: 0 0 14px; }
+    .finding { margin-top: 18px; padding: 18px 20px; border-left: 6px solid #ca8a04; background: #fff9e7; }
+    .finding strong { display: block; font-size: 20px; margin-bottom: 6px; }
+    .finding p { margin: 0; color: #4b5c53; font-size: 17px; line-height: 1.45; }
+    .prescription { margin-top: 28px; padding: 22px 24px; border-radius: 14px; background: #eaf4ef; }
+    .prescription p { font-size: 19px; line-height: 1.45; margin: 0; }
+    footer { display: flex; justify-content: space-between; margin-top: 32px; color: #6b7a72; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Project Doctor · Sample diagnosis report</div>
+    <h1>Storefront checkup</h1>
+    <p class="lede">A plain-language report for the next safe improvement.</p>
+    <section class="status">
+      <div><div class="grade">C</div><div class="grade-label">Needs attention</div></div>
+      <div>
+        <h2>What to fix first</h2>
+        <div class="finding"><strong>1. An old backup file is still in the project</strong><p>It can confuse future edits. Remove it only after confirming the current file is the version in use.</p></div>
+        <div class="finding"><strong>2. Setup steps are hard to find</strong><p>Add a short start section so the next person can run the project without guessing.</p></div>
+      </div>
+    </section>
+    <section class="prescription"><h2>Today’s prescription</h2><p>Start with the backup file. I will show the exact change and an undo command before anything is edited.</p></section>
+    <footer><span>Read-only diagnosis · changes need your approval</span><span>Example report</span></footer>
+  </main>
+</body>
+</html>

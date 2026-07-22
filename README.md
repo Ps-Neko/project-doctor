@@ -5,11 +5,13 @@ What is wrong → where to fix it → what to approve first. It only changes wha
 
 [![CI](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml)
 
-> **Note: diagnosis reports can now be generated in Korean or English.** Korean remains the original default for Korean conversations; English conversations use the English report template. Machine-readable grader markers stay in Korean by design. Docs: **English (this file)** · **[한국어 README](./README.ko.md)**
+> **Language:** Korean conversations receive Korean reports; English conversations receive English reports. Machine-readable markers stay in Korean by design. Docs: **English (this page)** · **[한국어 README](./README.ko.md)**
 
 **[3-minute demo — see a real diagnosis report](./DEMO.md)** · **[Measurement records (EVALS)](./EVALS.md)**
 
-![Sample clinical report (HTML output)](./docs/assets/report-sample.png)
+![English sample diagnosis report showing a C grade, two findings, and an approval-first prescription](./docs/assets/report-sample-en.png)
+
+*English report example — the report explains the next safe action before anything changes.*
 
 Current version: **v2.8.0** <!-- 현재 버전: v2.8.0 (machine-readable marker for tests/check_version.py) --> — Korean and English diagnosis reports, all modes + returning-patient features (grade trend "May D → today C", treated-area follow-up, one prescription per visit, checkup interval guidance), pre-execution change preview, write-boundary auto check, reports as Markdown / HTML ("clinical" report design) / PDF (auto-converted via your local browser) / Word, plus an HTML report security verifier (allowlist-based tag / external-resource / secret-leak machine checks). Changelog: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · License: [MIT](./LICENSE)
 
@@ -91,6 +93,12 @@ macOS/Linux: `mkdir -p ~/.claude/skills && cp -r skills/project-doctor ~/.claude
 /project-doctor pivot "<goal>"       # pivot plan
 /project-doctor release-check        # pre-release check
 ```
+
+## How a checkup works
+
+![Four steps: ask for a checkup, read the report, approve one fix, and keep an undo option](./docs/assets/how-it-works-en.svg)
+
+The report comes first. You choose whether to approve a proposed change, one at a time.
 
 ## Safety by design
 
