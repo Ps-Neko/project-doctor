@@ -5,13 +5,15 @@
 
 [![CI](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Ps-Neko/project-doctor/actions/workflows/ci.yml)
 
-> Docs: **[English README](./README.md)** · **한국어 (이 문서)** — 진단 보고서는 한국어로 생성됩니다.
+> **언어:** 한국어로 대화하면 한국어 결과지, 영어로 대화하면 영어 결과지를 만듭니다. 기계 판독용 표시는 한국어로 유지됩니다. Docs: **[English README](./README.md)** · **한국어 (이 문서)**
 
 📄 **[3분 데모 — 실제 진단 보고서 보기](./DEMO.md)** · 📊 **[측정 기록 (EVALS)](./EVALS.md)**
 
-![클리니컬 결과지 예시 (HTML 출력)](./docs/assets/report-sample.png)
+![C 등급, 두 가지 소견, 승인 전 처방을 보여주는 한글 진단 결과지 예시](./docs/assets/report-sample-ko.png)
 
-> **현재 버전: v2.7.12 "8차 외부 평가 정합 — 골든·측정 최신화 + HTML 주석 XSS 차단"** — 전 모드 + 단골 기능(등급 추이 "5월 D → 오늘 C" · 치료 부위 경과 확인 · 이번 주 처방 1건 · 검진 주기 안내) + 처방 실행 전 전/후 변경 내용 미리보기 + 쓰기 경계 자동 검사 + 보고서를 마크다운/HTML(클리니컬 결과지)/PDF(내장 브라우저 자동 변환)/워드(변환 도구 있을 때)로 받기 + **HTML 결과지 보안 검증기**(허용목록 기반 태그·외부 리소스·비밀키 노출 기계 검사). 두 번째 방문부터 "지난번보다 좋아졌는지"를 아는 주치의가 됩니다. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
+*한글 결과지 예시 — 실제로 바꾸기 전에, 다음에 할 안전한 조치를 먼저 설명합니다.*
+
+> **현재 버전: v2.8.0 "영어 결과지 지원"** — 한국어·영어 결과지, 전 모드와 단골 기능(등급 추이 · 치료 부위 경과 확인 · 이번 주 처방 1건 · 검진 주기 안내), 처방 실행 전 변경 내용 미리보기, 쓰기 경계 자동 검사, 마크다운/HTML(클리니컬 결과지)/PDF(내장 브라우저 자동 변환)/워드 출력, 그리고 **HTML 결과지 보안 검증기**(허용목록 기반 태그·외부 리소스·비밀키 노출 검사)를 제공합니다. 변경 이력: [CHANGELOG](./skills/project-doctor/CHANGELOG.md) · 라이선스: [MIT](./LICENSE)
 
 ## 무엇을 해주나요
 
@@ -90,6 +92,12 @@ macOS/Linux: `mkdir -p ~/.claude/skills && cp -r skills/project-doctor ~/.claude
 /project-doctor pivot "<목표>"        # 방향전환 계획
 /project-doctor release-check        # 공개 전 검진
 ```
+
+## 이렇게 사용해요
+
+![검진 요청, 결과지 읽기, 하나씩 승인, 되돌리기의 네 단계](./docs/assets/how-it-works-ko.svg)
+
+먼저 결과지를 받고, 바꿀지 말지는 한 가지씩 직접 결정합니다.
 
 ## 안전장치 (설계 원칙)
 
