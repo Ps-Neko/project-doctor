@@ -46,6 +46,9 @@ jobs:
       - name: 자체 픽스처 채점 회귀 (정답지 → 100%·오탐 0)
         run: python tests/check_scoring_regression.py
 
+      - name: Local performance regression guard (3 median runs)
+        run: python tests/check_performance.py
+
       - name: 문서 링크 검사
         run: python tests/check_links.py
 
